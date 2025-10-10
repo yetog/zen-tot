@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useChat } from '@/hooks/useChat';
 import { useFileContext } from '@/contexts/FileContext';
 import { ChatMessage } from '@/components/ChatMessage';
 import { TypingIndicator } from '@/components/TypingIndicator';
-import { specializedAgents } from '@/services/specializedAgents';
 import { ionosAI } from '@/services/ionosAI';
 import { toast } from 'sonner';
 
@@ -23,7 +21,6 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
   const { messages, isLoading, sendMessage, clearChat } = useChat();
   const { files, getContextForFiles, getRelevantFileContextDetailed } = useFileContext();
   const [inputValue, setInputValue] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState<'sales' | 'retention' | 'technical'>('sales');
   const [showSettings, setShowSettings] = useState(false);
   const [apiToken, setApiToken] = useState(ionosAI.getApiToken() || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -50,22 +47,13 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
       usedFiles = detail.files.map(f => f.name);
     }
 
-    // Get specialized response
-    const agentPersonality = specializedAgents.getAgentPersonality(selectedAgent);
-    // Convert messages to conversation history format
-    const conversationHistory = messages.slice(-5).map(msg => ({
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp
-    }));
-
     await sendMessage(
       inputValue, 
       '', 
       context, 
       usedFiles, 
       [], 
-      `${agentPersonality.agentType.charAt(0).toUpperCase() + agentPersonality.agentType.slice(1)} Specialist`,
+      'Pat - HR Assistant',
       undefined
     );
 
@@ -82,14 +70,13 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
       usedFiles = res.files.map(f => f.name);
     }
 
-    const agentPersonality = specializedAgents.getAgentPersonality(selectedAgent);
     await sendMessage(
       action,
       '',
       context,
       usedFiles,
       [],
-      `${agentPersonality.agentType.charAt(0).toUpperCase() + agentPersonality.agentType.slice(1)} Specialist`,
+      'Pat - HR Assistant',
       undefined
     );
   };
@@ -107,7 +94,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
   const exportChat = () => {
     const chatData = {
       timestamp: new Date().toISOString(),
-      agent: selectedAgent,
+      agent: 'hr-assistant',
       messages: messages.map(msg => ({
         role: msg.role,
         content: msg.content,
@@ -120,7 +107,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sensei-ai-chat-${selectedAgent}-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `ask-hr-chat-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -128,8 +115,12 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
     toast.success('Chat exported successfully');
   };
 
-  const agentPersonality = specializedAgents.getAgentPersonality(selectedAgent);
-  const conversationStarters = specializedAgents.getConversationStarters(selectedAgent);
+  const hrQuestions = [
+    "What's the difference between HDHP and PPO?",
+    "How do HSA and FSA accounts work?",
+    "What is our sick leave policy?",
+    "Tell me about bereavement leave"
+  ];
 
   return (
     <Card className={`flex flex-col h-full ${className}`}>
@@ -139,13 +130,13 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
           <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
           <div>
             <h3 className="font-semibold flex items-center space-x-2">
-              <span>{selectedAgent.charAt(0).toUpperCase() + selectedAgent.slice(1)} Specialist</span>
+              <span>Pat - HR Assistant</span>
               <Badge variant="secondary" className="text-xs">
-                {agentPersonality.responseStyle}
+                Professional
               </Badge>
             </h3>
             <p className="text-xs text-muted-foreground">
-              Specialized in {agentPersonality.expertise.join(', ')}
+              Benefits, Policies, and Employee Handbook
             </p>
           </div>
         </div>
@@ -170,20 +161,9 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
         </div>
       </div>
 
-      {/* Agent Selection */}
+      {/* Knowledge Base Info */}
       <div className="p-3 border-b border-border bg-secondary/20">
-        <div className="flex items-center space-x-3">
-          <label className="text-sm font-medium">Agent:</label>
-          <Select value={selectedAgent} onValueChange={(value: 'sales' | 'retention' | 'technical') => setSelectedAgent(value)}>
-            <SelectTrigger className="w-40 h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sales">Sales Specialist</SelectItem>
-              <SelectItem value="retention">Retention Expert</SelectItem>
-              <SelectItem value="technical">Technical Advisor</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
             {selectedFileIds.length > 0 && (
               <Badge variant="outline" className="text-xs">
@@ -192,7 +172,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
             )}
             {files.length > 0 && (
               <Badge variant="outline" className="text-xs">
-                {files.length} total files
+                {files.length} HR documents available
               </Badge>
             )}
           </div>
@@ -230,23 +210,23 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
           <div className="text-center text-muted-foreground py-8">
             <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="text-sm mb-4">
-              Hi! I'm your {selectedAgent} specialist. How can I help you today?
+              Hi! I'm Pat, your IONOS HR Assistant. How can I help you today?
             </p>
             <p className="text-xs text-muted-foreground mb-4">
-              Expertise: {agentPersonality.expertise.join(' • ')}
+              Ask me about benefits, policies, or handbook procedures
             </p>
             <div className="space-y-2">
-              <p className="text-xs font-medium">Quick starters:</p>
-              {conversationStarters.slice(0, 3).map((starter, index) => (
+              <p className="text-xs font-medium">Common questions:</p>
+              {hrQuestions.map((question, index) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
                   className="w-full text-xs"
-                  onClick={() => handleQuickAction(starter)}
+                  onClick={() => handleQuickAction(question)}
                   disabled={!ionosAI.getApiToken()}
                 >
-                  {starter}
+                  {question}
                 </Button>
               ))}
             </div>
@@ -260,7 +240,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
         {isLoading && (
           <div className="flex justify-start mb-4">
             <div className="bg-secondary rounded-lg px-4 py-2">
-              <TypingIndicator agentName={`${selectedAgent.charAt(0).toUpperCase() + selectedAgent.slice(1)} Specialist`} />
+              <TypingIndicator agentName="Pat - HR Assistant" />
             </div>
           </div>
         )}
@@ -277,7 +257,7 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
             placeholder={
               !ionosAI.getApiToken() 
                 ? "Set API token in settings" 
-                : `Ask your ${selectedAgent} specialist...`
+                : "Ask HR questions about benefits, policies, or procedures..."
             }
             disabled={!ionosAI.getApiToken() || isLoading}
             className="flex-1"
@@ -292,26 +272,26 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
         </div>
         <div className="flex justify-between items-center mt-2">
           <p className="text-xs text-muted-foreground">
-            {!ionosAI.getApiToken() ? 'API token required' : `Connected to ${selectedAgent} specialist`}
+            {!ionosAI.getApiToken() ? 'API token required' : 'Connected to Pat - HR Assistant'}
           </p>
           <div className="flex space-x-1">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleQuickAction("What should I focus on in this call?")}
+              onClick={() => handleQuickAction("Tell me about our benefits")}
               disabled={!ionosAI.getApiToken() || isLoading}
               className="text-xs"
             >
-              Focus
+              Benefits Info
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleQuickAction("Help me handle objections")}
+              onClick={() => handleQuickAction("Look up company policies")}
               disabled={!ionosAI.getApiToken() || isLoading}
               className="text-xs"
             >
-              Objections
+              Policy Lookup
             </Button>
           </div>
         </div>

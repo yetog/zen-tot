@@ -3,44 +3,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ScriptVoice Design System - Black + Purple + White Theme */
+/* Ask HR Design System - White + Dark Blue Professional Theme */
 
 @layer base {
   :root {
-    --background: 13 13% 5%;
-    --foreground: 0 0% 100%;
+    /* Light Mode - White + Dark Blue HR Theme */
+    --background: 0 0% 100%;           /* Pure white */
+    --foreground: 220 25% 15%;         /* Dark blue-gray text */
 
-    --card: 15 15% 8%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%;                 /* White cards */
+    --card-foreground: 220 25% 15%;    /* Dark blue-gray text */
 
-    --popover: 15 15% 8%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 15%;
 
-    --primary: 270 91% 65%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 220 85% 45%;            /* Dark blue (IONOS-style) */
+    --primary-foreground: 0 0% 100%;   /* White text on blue */
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 20% 95%;          /* Light blue-gray */
+    --secondary-foreground: 220 25% 15%;
 
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 220 15% 92%;              /* Very light gray */
+    --muted-foreground: 220 15% 45%;   /* Medium gray */
 
-    --accent: 280 100% 70%;
+    --accent: 220 85% 55%;             /* Lighter blue for accents */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 25%;
-    --input: 0 0% 15%;
-    --ring: 270 91% 65%;
+    --border: 220 20% 88%;             /* Light border */
+    --input: 220 20% 95%;              /* Light input background */
+    --ring: 220 85% 45%;               /* Blue focus ring */
 
     --radius: 0.5rem;
+  }
 
-    /* Purple gradient colors */
-    --primary-gradient: linear-gradient(135deg, hsl(270 91% 65%), hsl(280 100% 70%));
-    --card-gradient: linear-gradient(145deg, hsl(15 15% 8%), hsl(270 20% 10%));
-    --shadow-purple: 0 10px 30px -10px hsl(270 91% 65% / 0.3);
+  /* Dark Mode - For users who prefer it */
+  .dark {
+    --background: 220 25% 10%;         /* Very dark blue */
+    --foreground: 0 0% 100%;
+    
+    --card: 220 25% 12%;
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 220 25% 12%;
+    --popover-foreground: 0 0% 100%;
+    
+    --primary: 220 85% 55%;            /* Brighter blue for dark mode */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 25% 18%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 220 20% 20%;
+    --muted-foreground: 220 15% 70%;
+    
+    --accent: 220 85% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --border: 220 20% 25%;
+    --input: 220 20% 18%;
+    --ring: 220 85% 55%;
   }
 }
 
@@ -54,26 +78,4 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
-
-/* Custom animations for Sensei AI */
-@keyframes pulse-purple {
-  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.7); }
-  50% { box-shadow: 0 0 0 10px hsl(var(--primary) / 0); }
-}
-.pulse-purple { animation: pulse-purple 2s infinite; }
-
-/* Glow effects */
-@keyframes glow-purple {
-  0%, 100% { box-shadow: 0 0 5px hsl(var(--primary) / 0.5); }
-  50% { box-shadow: 0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--accent) / 0.6); }
-}
-.glow-purple { animation: glow-purple 3s ease-in-out infinite; }
-
-/* Samurai sword animation */
-@keyframes katana-swing {
-  0% { transform: rotate(-30deg) translateX(-20px); opacity: 0; }
-  40% { opacity: 1; }
-  100% { transform: rotate(10deg) translateX(140px); opacity: 0; }
-}
-.katana-sword { animation: katana-swing 0.9s ease-out both; }
 

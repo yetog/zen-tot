@@ -7,9 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database, MessageSquare, Sparkles } from "lucide-react";
 import { ConversationCenter } from "@/components/ConversationCenter";
-import { ContentCreationHub } from "@/components/ContentCreationHub";
-import { useChat } from "@/hooks/useChat";
-import { toast } from "sonner";
+import { HRResources } from '@/components/HRResources';
 
 
 export default function Workspace() {
@@ -17,9 +15,6 @@ export default function Workspace() {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("sources");
-  const [callTranscript, setCallTranscript] = useState('');
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [lastGeneratedQuote, setLastGeneratedQuote] = useState<any>(null);
 
   const allFiles = useMemo(() => {
     return [...files, ...getProjectFiles()];
@@ -28,13 +23,6 @@ export default function Workspace() {
   const filteredFiles = useMemo(() =>
     allFiles.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())),
   [allFiles, search]);
-
-  // Mock customer info for demo
-  const customerInfo = {
-    company: "TechCorp Solutions",
-    industry: "Technology",
-    size: "Medium Business"
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,11 +86,7 @@ export default function Workspace() {
           </TabsContent>
 
           <TabsContent value="content">
-            <ContentCreationHub 
-              quoteData={lastGeneratedQuote}
-              callNotes={callTranscript}
-              customerInfo={customerInfo}
-            />
+            <HRResources />
           </TabsContent>
         </Tabs>
       </div>
