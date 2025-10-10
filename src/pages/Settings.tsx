@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ionosAI } from "@/services/ionosAI";
 import { toast } from "sonner";
-import { HelpCircle, Users, MessageSquare, Settings as SettingsIcon, Bot, FileText, Zap } from "lucide-react";
+import { HelpCircle, Users, MessageSquare, Settings as SettingsIcon, Bot, FileText, Zap, Check, Lightbulb } from "lucide-react";
 
 export default function Settings() {
   const [token, setToken] = useState(ionosAI.getApiToken() || "");
@@ -36,8 +36,9 @@ export default function Settings() {
               <div>
                 <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                   API Configuration
-                  <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-                    ✅ Pre-configured
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
+                    Pre-configured
                   </Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">All API keys are pre-configured for the demo experience</p>
@@ -47,7 +48,10 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm font-medium text-muted-foreground">IONOS AI Integration</div>
-                  <div className="text-xs text-muted-foreground">✅ Active and ready for demo</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Check className="h-3 w-3 text-green-600" />
+                    Active and ready for demo
+                  </div>
                 </div>
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                   Connected
@@ -56,11 +60,15 @@ export default function Settings() {
               
               <div className="space-y-1">
                 <div className="text-sm font-medium text-muted-foreground">ElevenLabs TTS</div>
-                <div className="text-xs text-muted-foreground">✅ Voice synthesis ready</div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  Voice synthesis ready
+                </div>
               </div>
               
-              <div className="text-xs text-muted-foreground p-2 bg-blue-50 rounded border border-blue-200">
-                💡 All API integrations are pre-configured for the demo. No additional setup required!
+              <div className="text-xs text-muted-foreground p-2 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-200 dark:border-blue-800 flex items-start gap-2">
+                <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <span>All API integrations are pre-configured for the demo. No additional setup required!</span>
               </div>
             </div>
           </Card>

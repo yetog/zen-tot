@@ -251,8 +251,8 @@ export function CallAssistant() {
         budget: conversationContext.customerMentions.budget
       });
       
-      toast.success('AI Quote generated in <30s! 🎯');
-      setCallNotes(prev => prev + `\n\n💰 AI Quote #${intelligentQuote.id}: $${intelligentQuote.content.summary.total.toLocaleString()}\n${intelligentQuote.imageUrl ? '🖼️ Professional quote image generated with IONOS AI' : ''}\n🎯 Confidence: ${Math.round(intelligentQuote.confidenceScore * 100)}%\n📋 Next Actions: ${intelligentQuote.nextActions.join(', ')}\n⏱️ Generated in call minute ${Math.floor(callDuration / 60)}`);
+      toast.success('AI Quote generated in <30s!');
+      setCallNotes(prev => prev + `\n\nAI Quote #${intelligentQuote.id}: $${intelligentQuote.content.summary.total.toLocaleString()}\n${intelligentQuote.imageUrl ? 'Professional quote image generated with IONOS AI' : ''}\nConfidence: ${Math.round(intelligentQuote.confidenceScore * 100)}%\nNext Actions: ${intelligentQuote.nextActions.join(', ')}\nGenerated in call minute ${Math.floor(callDuration / 60)}`);
       
     } catch (error) {
       toast.error('Failed to generate quote');
@@ -497,7 +497,7 @@ export function CallAssistant() {
           <Alert>
             <Brain className="h-4 w-4" />
             <AlertDescription>
-              <p>✅ IONOS AI is configured for intelligent quote generation with visual quotes!</p>
+              <p className="font-medium">IONOS AI is configured for intelligent quote generation with visual quotes!</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Professional quotes are generated in under 30 seconds using IONOS AI's advanced models.
               </p>

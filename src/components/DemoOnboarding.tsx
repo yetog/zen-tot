@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Circle, ArrowRight, FileText, Bot, Database, MessageSquare } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, FileText, Bot, Database, MessageSquare, X } from 'lucide-react';
 
 interface OnboardingStep {
   id: string;
@@ -79,7 +79,9 @@ export const DemoOnboarding: React.FC<DemoOnboardingProps> = ({
     <Card className="p-6 bg-gradient-to-br from-primary/5 to-secondary/10 border-primary/20 shadow-lg max-w-md mx-auto animate-scale-in">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">Welcome to Wolf AI!</h3>
-        <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="mb-6">

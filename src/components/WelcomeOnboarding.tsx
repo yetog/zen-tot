@@ -245,7 +245,7 @@ export function WelcomeOnboarding({ onClose }: WelcomeOnboardingProps) {
                     isCompleted ? 'text-green-700 dark:text-green-400' : 'text-foreground'
                   }`}>
                     {step.title}
-                    {isCompleted && <span className="ml-2 text-xs text-green-600">✓ Complete</span>}
+                    {isCompleted && <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">Complete</Badge>}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {step.description}

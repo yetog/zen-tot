@@ -11,7 +11,10 @@ import {
   MessageSquare, 
   Clock,
   Star,
-  BarChart3
+  BarChart3,
+  Briefcase,
+  Settings,
+  Bot
 } from 'lucide-react';
 import { VoiceAgent } from './VoiceAgent';
 import { AgentConfig } from '@/types/agent';
@@ -119,10 +122,10 @@ export const ConversationalDashboard: React.FC<ConversationalDashboardProps> = (
 
   const getAgentTypeIcon = (type: string) => {
     switch (type) {
-      case 'sales': return '💼';
-      case 'retention': return '🤝';
-      case 'technical': return '⚙️';
-      default: return '🤖';
+      case 'sales': return <Briefcase className="h-4 w-4" />;
+      case 'retention': return <Users className="h-4 w-4" />;
+      case 'technical': return <Settings className="h-4 w-4" />;
+      default: return <Bot className="h-4 w-4" />;
     }
   };
 

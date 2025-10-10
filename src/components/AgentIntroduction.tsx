@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Sparkles, FileText, Database } from 'lucide-react';
+import { Bot, Sparkles, FileText, Database, X } from 'lucide-react';
 import { AgentConfig } from '@/types/agent';
 import { agentTrainingService } from '@/services/agentTrainingService';
 import { datasetService } from '@/services/datasetService';
@@ -51,7 +51,7 @@ export const AgentIntroduction: React.FC<AgentIntroductionProps> = ({
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose}>
-          ✕
+          <X className="h-4 w-4" />
         </Button>
       </div>
 

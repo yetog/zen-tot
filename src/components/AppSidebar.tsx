@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Brain, FolderOpen, Users, Settings as SettingsIcon, BookOpen } from "lucide-react";
+import { Brain, FolderOpen, Users, Settings as SettingsIcon, BookOpen, Briefcase } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -40,11 +40,11 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-primary font-semibold tracking-wide">
             {!collapsed ? (
               <div className="flex items-center gap-2">
-                <span className="text-lg">💼</span>
+                <Briefcase className="h-5 w-5" />
                 Ask HR
               </div>
             ) : (
-              <span className="text-lg">💼</span>
+              <Briefcase className="h-5 w-5" />
             )}
           </SidebarGroupLabel>
           <SidebarGroupContent>
