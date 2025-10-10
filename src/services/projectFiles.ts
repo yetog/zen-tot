@@ -1,27 +1,35 @@
 import { UploadedFile } from '@/types/file';
-// Project files service - currently no project files are included in sources
+import { hrKnowledgeBase } from '@/data/hrKnowledgeBase';
 
-function toUploadedFile(name: string, content: string): UploadedFile {
-  return {
-    id: `project_${name}`,
-    name,
-    type: name.toLowerCase().endsWith('.md') ? 'text/markdown' : 'text/plain',
-    size: new TextEncoder().encode(content).length,
-    content,
-    extractedText: content,
-    uploadDate: new Date(0),
-    projectId: 'project'
-  };
-}
+// Convert HR knowledge base documents to UploadedFile format
+const hrDocuments: UploadedFile[] = hrKnowledgeBase.map(doc => ({
+  id: `hr_default_${doc.id}`,
+  name: `${doc.title}.md`,
+  type: 'text/markdown',
+  size: new TextEncoder().encode(doc.content).length,
+  content: doc.content,
+  extractedText: doc.content,
+  uploadDate: new Date(doc.lastUpdated),
+  projectId: 'hr_knowledge_base',
+  metadata: {
+    category: doc.category,
+    isDefault: true,
+    tags: doc.tags,
+    summary: doc.summary
+  }
+}));
 
 export const getProjectFiles = (): UploadedFile[] => {
-  // No project files are included in sources
-  return [];
+  return hrDocuments;
 };
 
 export const searchProjectFiles = (query: string): UploadedFile[] => {
   const q = query.toLowerCase();
-  return getProjectFiles().filter(f => 
-    f.name.toLowerCase().includes(q) || (f.extractedText || '').toLowerCase().includes(q)
+  return hrDocuments.filter(f => 
+    f.name.toLowerCase().includes(q) || 
+    (f.extractedText || '').toLowerCase().includes(q) ||
+    f.metadata?.tags?.some(tag => tag.toLowerCase().includes(q)) ||
+    f.metadata?.category?.toLowerCase().includes(q) ||
+    f.metadata?.summary?.toLowerCase().includes(q)
   );
 };

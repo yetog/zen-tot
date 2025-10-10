@@ -21,7 +21,6 @@ export function AppSidebar() {
 
   const items = [
     { title: "Workspace", url: "/", icon: Brain },
-    { title: "Datasets", url: "/datasets", icon: FolderOpen },
     { title: "Agents", url: "/agents", icon: Users },
     { title: "HR Resources", url: "/products", icon: BookOpen },
     { title: "Settings", url: "/settings", icon: SettingsIcon },

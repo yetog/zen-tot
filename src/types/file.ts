@@ -7,6 +7,12 @@ export interface UploadedFile {
   extractedText?: string;
   uploadDate: Date;
   projectId?: string;
+  metadata?: {
+    category?: 'benefits' | 'policies' | 'handbook' | 'onboarding';
+    isDefault?: boolean;
+    tags?: string[];
+    summary?: string;
+  };
 }
 
 export interface FileChunk {

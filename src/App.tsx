@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { FileProvider } from "@/contexts/FileContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Workspace from "./pages/Workspace";
-import Datasets from "./pages/Datasets";
 import Agents from "./pages/Agents";
 import Products from "./pages/Products";
 import Settings from "./pages/Settings";
@@ -49,7 +48,6 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Workspace />} />
                     <Route path="/workspace" element={<Workspace />} />
-                    <Route path="/datasets" element={<Datasets />} />
                     <Route path="/agents" element={<Agents />} />
                     <Route path="/products" element={<Products />} />
                     <Route path="/tools" element={<Tools />} />
