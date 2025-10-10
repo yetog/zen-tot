@@ -40,11 +40,11 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-primary font-semibold tracking-wide">
             {!collapsed ? (
               <div className="flex items-center gap-2">
-                <span className="text-lg">🥋</span>
-                Sensei AI
+                <span className="text-lg">💼</span>
+                Ask HR
               </div>
             ) : (
-              <span className="text-lg">🥋</span>
+              <span className="text-lg">💼</span>
             )}
           </SidebarGroupLabel>
           <SidebarGroupContent>

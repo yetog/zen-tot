@@ -37,13 +37,9 @@ const App = () => (
                     <SidebarTrigger className="-ml-1" />
                     <BreadcrumbNav />
                   </div>
-                  <div className="hidden sm:flex items-center gap-2 group relative">
-                    <div className="relative">
-                      <span className="text-lg font-bold">Sensei <span className="text-primary">AI</span></span>
-                      {/* Samurai sword animation */}
-                      <Sword className="absolute -top-5 -left-8 h-8 w-8 text-primary katana-sword" />
-                    </div>
-                    <span className="text-xs text-muted-foreground ml-2">Your GPT Trainer</span>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="text-lg font-bold">Ask <span className="text-primary">HR</span></span>
+                    <span className="text-xs text-muted-foreground ml-2">Your 24/7 HR Assistant</span>
                   </div>
                 </header>
 

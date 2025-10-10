@@ -43,15 +43,15 @@ export default function Workspace() {
           <TabsList className="grid w-full grid-cols-3 mb-6 h-auto p-1">
             <TabsTrigger value="sources" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
-              Data Sources
+              HR Knowledge Base
             </TabsTrigger>
             <TabsTrigger value="objections" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Sales Assistant
+              Ask HR Chat
             </TabsTrigger>
             <TabsTrigger value="content" className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Content Creation
+              HR Resources
             </TabsTrigger>
           </TabsList>
 
@@ -59,7 +59,7 @@ export default function Workspace() {
             <Card className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Data Sources</h3>
+                  <h3 className="text-lg font-semibold">HR Knowledge Base</h3>
                   <div className="text-sm text-muted-foreground">
                     {allFiles.length} files available
                   </div>
