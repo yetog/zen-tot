@@ -5,9 +5,8 @@ import { useFileContext } from "@/contexts/FileContext";
 import { getProjectFiles } from "@/services/projectFiles";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, MessageSquare, Sparkles } from "lucide-react";
+import { Database, MessageSquare } from "lucide-react";
 import { ConversationCenter } from "@/components/ConversationCenter";
-import { HRResources } from '@/components/HRResources';
 
 
 export default function Workspace() {
@@ -28,7 +27,7 @@ export default function Workspace() {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-3 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 mb-6 h-auto p-1">
             <TabsTrigger value="sources" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               HR Knowledge Base
@@ -36,10 +35,6 @@ export default function Workspace() {
             <TabsTrigger value="objections" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               Ask HR Chat
-            </TabsTrigger>
-            <TabsTrigger value="content" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              HR Resources
             </TabsTrigger>
           </TabsList>
 
@@ -83,10 +78,6 @@ export default function Workspace() {
 
           <TabsContent value="objections">
             <ConversationCenter selectedFileIds={selectedFileIds} />
-          </TabsContent>
-
-          <TabsContent value="content">
-            <HRResources />
           </TabsContent>
         </Tabs>
       </div>

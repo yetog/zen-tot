@@ -15,7 +15,7 @@ import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
-import { Sword } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const queryClient = new QueryClient();
 
@@ -36,9 +36,12 @@ const App = () => (
                     <SidebarTrigger className="-ml-1" />
                     <BreadcrumbNav />
                   </div>
-                  <div className="hidden sm:flex items-center gap-2">
-                    <span className="text-lg font-bold">Ask <span className="text-primary">HR</span></span>
-                    <span className="text-xs text-muted-foreground ml-2">Your 24/7 HR Assistant</span>
+                  <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex items-center gap-2">
+                      <span className="text-lg font-bold">Ask <span className="text-primary">HR</span></span>
+                      <span className="text-xs text-muted-foreground ml-2">Your 24/7 HR Assistant</span>
+                    </div>
+                    <ThemeToggle />
                   </div>
                 </header>
 

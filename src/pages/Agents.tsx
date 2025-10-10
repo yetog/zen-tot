@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { agentService } from "@/services/agentService";
 import { datasetService } from "@/services/datasetService";
-import { promptLibrary, getPromptsByCategory, PromptTemplate } from "@/data/promptLibrary";
-import { Sparkles, Settings, BookOpen, Copy, Edit, Trash2 } from "lucide-react";
+import { hrAgentTemplates, HRAgentTemplate } from "@/data/hrAgentTemplates";
+import { Sparkles, Settings, BookOpen, Copy, Edit, Trash2, FileText, Shield, Book, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Agents() {
@@ -31,10 +31,20 @@ export default function Agents() {
   const agents = useMemo(() => agentService.list(), [refresh]);
   const datasets = useMemo(() => datasetService.list(), [refresh]);
   
-  const filteredPrompts = useMemo(() => {
-    if (selectedCategory === "all") return promptLibrary;
-    return getPromptsByCategory(selectedCategory as PromptTemplate['category']);
+  const filteredAgents = useMemo(() => {
+    if (selectedCategory === "all") return hrAgentTemplates;
+    return hrAgentTemplates.filter(agent => agent.category === selectedCategory);
   }, [selectedCategory]);
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'benefits': return FileText;
+      case 'policies': return Shield;
+      case 'handbook': return Book;
+      case 'onboarding': return UserPlus;
+      default: return Sparkles;
+    }
+  };
 
   const create = () => {
     if (!name.trim() || !prompt.trim()) {
@@ -96,7 +106,7 @@ export default function Agents() {
     if (customTab) customTab.click();
   };
 
-  const useTemplate = (template: PromptTemplate) => {
+  const useTemplate = (template: HRAgentTemplate) => {
     setName(template.name);
     setPrompt(template.systemPrompt);
     setTemperature([template.suggestedSettings.temperature]);
@@ -108,7 +118,7 @@ export default function Agents() {
     if (customTab) customTab.click();
   };
 
-  const useThisAgent = (template: PromptTemplate) => {
+  const useThisAgent = (template: HRAgentTemplate) => {
     try {
       const agent = agentService.create({
         name: template.name,
@@ -155,8 +165,8 @@ export default function Agents() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold mb-2">AI Agents</h1>
-        <p className="text-muted-foreground">Create and manage custom AI agents with specialized prompts and settings.</p>
+        <h1 className="text-2xl font-bold mb-2">HR AI Agents</h1>
+        <p className="text-muted-foreground">Create specialized HR agents to help employees with benefits, policies, onboarding, and more.</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -179,7 +189,7 @@ export default function Agents() {
               <Card className="p-4">
                 <div className="flex items-center gap-3 mb-4">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold">Prompt Library</h3>
+                  <h3 className="font-semibold">HR Agent Templates</h3>
                 </div>
                 
                 <div className="mb-4">
@@ -189,40 +199,42 @@ export default function Agents() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="analysis">Analysis</SelectItem>
+                      <SelectItem value="benefits">Benefits</SelectItem>
+                      <SelectItem value="policies">Policies</SelectItem>
+                      <SelectItem value="handbook">Handbook</SelectItem>
+                      <SelectItem value="onboarding">Onboarding</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="grid gap-3 max-h-96 overflow-y-auto">
-                  {filteredPrompts.map((template) => (
-                    <div key={template.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-medium">{template.name}</h4>
-                          <p className="text-sm text-muted-foreground">{template.description}</p>
+                  {filteredAgents.map((template) => {
+                    const CategoryIcon = getCategoryIcon(template.category);
+                    return (
+                      <div key={template.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-start gap-3 flex-1">
+                            <CategoryIcon className="w-5 h-5 text-primary mt-0.5" />
+                            <div>
+                              <h4 className="font-medium">{template.name}</h4>
+                              <p className="text-sm text-muted-foreground">{template.description}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <Button size="sm" variant="outline" onClick={() => useTemplate(template)}>
+                              Customize
+                            </Button>
+                            <Button size="sm" onClick={() => useThisAgent(template)}>
+                              Use Agent
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => useTemplate(template)}>
-                            Use Template
-                          </Button>
-                          <Button size="sm" onClick={() => useThisAgent(template)}>
-                            Use This Agent
-                          </Button>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="secondary" className="capitalize">{template.category}</Badge>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="secondary">{template.category}</Badge>
-                        {template.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             </TabsContent>
