@@ -15,7 +15,6 @@ import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
-import { WelcomeOnboarding } from "@/components/WelcomeOnboarding";
 import { Sword } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -58,7 +57,6 @@ const App = () => (
                 </main>
               </SidebarInset>
             </div>
-            <WelcomeOnboarding />
           </SidebarProvider>
           </BrowserRouter>
         </FileProvider>
