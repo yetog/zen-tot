@@ -12,8 +12,9 @@ export const useVoiceAgent = () => {
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
 
-  // Get Supabase URL from environment
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  // ElevenLabs configuration
+  const ELEVENLABS_AGENT_ID = 'agent_7701k7bfd4khebm8gp66aj0kpbsf';
+  const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
   const conversation = useConversation({
     onConnect: () => {
@@ -59,23 +60,31 @@ export const useVoiceAgent = () => {
   };
 
   const getSignedUrl = async (): Promise<string> => {
-    console.log('Fetching signed URL from:', `${supabaseUrl}/functions/v1/elevenlabs-signed-url`);
+    if (!ELEVENLABS_API_KEY) {
+      throw new Error('ElevenLabs API key not configured. Please add VITE_ELEVENLABS_API_KEY to your environment.');
+    }
+
+    console.log('Fetching signed URL from ElevenLabs API...');
     
-    const response = await fetch(`${supabaseUrl}/functions/v1/elevenlabs-signed-url`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${ELEVENLABS_AGENT_ID}`,
+      {
+        method: 'GET',
+        headers: {
+          'xi-api-key': ELEVENLABS_API_KEY,
+        },
       }
-    });
+    );
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Failed to get signed URL:', errorData);
-      throw new Error(errorData.error || 'Failed to get signed URL');
+      console.error('Failed to get signed URL from ElevenLabs:', errorData);
+      throw new Error(errorData.error || 'Failed to get signed URL from ElevenLabs');
     }
     
     const data = await response.json();
-    console.log('Got signed URL successfully');
-    return data.signedUrl;
+    console.log('Got signed URL successfully from ElevenLabs');
+    return data.signed_url;
   };
 
   const start = useCallback(async () => {
