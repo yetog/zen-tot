@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database, MessageSquare, Building2, FileText, Tag } from "lucide-react";
 import { ConversationCenter } from "@/components/ConversationCenter";
+import { VoiceButton } from "@/components/VoiceButton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -212,8 +213,9 @@ export default function Workspace() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="objections">
+          <TabsContent value="objections" className="space-y-4">
             <ConversationCenter selectedFileIds={selectedFileIds} />
+            <VoiceButton />
           </TabsContent>
         </Tabs>
       </div>
