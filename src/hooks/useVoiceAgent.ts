@@ -14,7 +14,7 @@ export const useVoiceAgent = () => {
 
   // ElevenLabs configuration
   const ELEVENLABS_AGENT_ID = 'agent_7701k7bfd4khebm8gp66aj0kpbsf';
-  const ELEVENLABS_API_KEY = 'sk_8e01678d62936838bc440a754e187457811e36b93613dca6';
+  const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
   const conversation = useConversation({
     onConnect: () => {
