@@ -8,6 +8,8 @@ const hrDocuments: UploadedFile[] = hrKnowledgeBase.map(doc => ({
   type: doc.fileType === 'pdf' ? 'application/pdf' : 
         doc.fileType === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
         doc.fileType === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+        doc.fileType === 'folder' ? 'application/folder' :
+        doc.fileType === 'external' ? 'application/external-link' :
         'text/markdown',
   size: new TextEncoder().encode(doc.content).length,
   content: doc.content,
@@ -16,11 +18,14 @@ const hrDocuments: UploadedFile[] = hrKnowledgeBase.map(doc => ({
   projectId: 'hr_knowledge_base',
   metadata: {
     category: doc.category,
+    entryType: doc.entryType,
     isDefault: true,
     tags: doc.tags,
     summary: doc.summary,
     googleDriveUrl: doc.googleDriveUrl,
-    fileType: doc.fileType
+    externalUrl: doc.externalUrl,
+    fileType: doc.fileType,
+    documentCount: doc.documentCount
   }
 }));
 

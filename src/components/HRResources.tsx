@@ -1,43 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   FileText, 
   BookOpen, 
-  FileCheck,
-  GraduationCap,
-  ClipboardList,
-  ExternalLink
+  Folder,
+  ExternalLink,
+  Search
 } from 'lucide-react';
-import { hrKnowledgeBase } from '@/data/hrKnowledgeBase';
+import { hrKnowledgeBase, HRDocument } from '@/data/hrKnowledgeBase';
 
 interface HRResourcesProps {
   className?: string;
 }
 
 export function HRResources({ className = '' }: HRResourcesProps) {
-  // Group documents by category
-  const categoryConfig = {
-    benefits: { title: 'Benefits Documents', icon: FileText, description: 'Health insurance, HSA, FSA, and benefits guides' },
-    policies: { title: 'Company Policies', icon: BookOpen, description: 'Time off, leave, and workplace policies' },
-    handbook: { title: 'Employee Handbook', icon: FileCheck, description: 'Complete guide to IONOS policies and procedures' },
-    onboarding: { title: 'Onboarding Resources', icon: GraduationCap, description: 'Getting started at IONOS' }
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const getIcon = (doc: HRDocument) => {
+    if (doc.entryType === 'folder') return Folder;
+    if (doc.entryType === 'external-link') return ExternalLink;
+    return FileText;
   };
 
-  const groupedDocuments = hrKnowledgeBase.reduce((acc, doc) => {
-    if (!acc[doc.category]) {
-      acc[doc.category] = [];
-    }
-    acc[doc.category].push(doc);
-    return acc;
-  }, {} as Record<string, typeof hrKnowledgeBase>);
-
-  const handleOpenDocument = (url?: string) => {
+  const handleOpen = (doc: HRDocument) => {
+    const url = doc.externalUrl || doc.googleDriveUrl;
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
+  const filteredDocuments = hrKnowledgeBase.filter(doc => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      doc.title.toLowerCase().includes(query) ||
+      doc.summary.toLowerCase().includes(query) ||
+      doc.tags.some(tag => tag.toLowerCase().includes(query)) ||
+      doc.content.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -49,73 +53,106 @@ export function HRResources({ className = '' }: HRResourcesProps) {
             HR Resources Library
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <p className="text-muted-foreground">
             Access important HR documents, policies, and resources. For questions about specific policies, 
             use the Ask HR Chat to get instant answers from our AI assistant.
           </p>
+          
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search documents, policies, or resources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </CardContent>
       </Card>
 
-      {/* Resource Categories */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(categoryConfig).map(([categoryKey, config]) => {
-          const documents = groupedDocuments[categoryKey as keyof typeof categoryConfig] || [];
-          const CategoryIcon = config.icon;
-          
-          return (
-            <Card key={categoryKey}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <CategoryIcon className="h-5 w-5 text-primary" />
-                  {config.title}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">{config.description}</p>
-              </CardHeader>
-              <CardContent>
-                {documents.length > 0 ? (
-                  <div className="space-y-2">
-                    {documents.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="flex items-start justify-between p-3 rounded-lg hover:bg-secondary/50 transition-colors group"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium">{doc.title}</span>
-                            {doc.fileType && (
-                              <Badge variant="outline" className="text-xs uppercase">
-                                {doc.fileType}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {doc.summary}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="View document in Google Drive"
-                          onClick={() => handleOpenDocument(doc.googleDriveUrl)}
-                          disabled={!doc.googleDriveUrl}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
+      {/* Document Cards Grid */}
+      {filteredDocuments.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredDocuments.map((doc) => {
+            const Icon = getIcon(doc);
+            const url = doc.externalUrl || doc.googleDriveUrl;
+            
+            return (
+              <Card 
+                key={doc.id} 
+                className="group hover:shadow-md transition-all cursor-pointer"
+                onClick={() => handleOpen(doc)}
+              >
+                <CardContent className="p-6">
+                  <div className="space-y-3">
+                    {/* Icon and Title */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                        <Icon className="h-5 w-5 text-primary" />
                       </div>
-                    ))}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-1">
+                          {doc.title}
+                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-xs">
+                            {doc.fileType?.toUpperCase()}
+                          </Badge>
+                          {doc.entryType === 'folder' && doc.documentCount && (
+                            <Badge variant="secondary" className="text-xs">
+                              {doc.documentCount} docs
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    <p className="text-xs text-muted-foreground line-clamp-3">
+                      {doc.summary}
+                    </p>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-xs text-muted-foreground">
+                        Updated {new Date(doc.lastUpdated).toLocaleDateString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpen(doc);
+                        }}
+                        disabled={!url}
+                      >
+                        {doc.entryType === 'folder' ? 'Open' : 
+                         doc.entryType === 'external-link' ? 'Visit' : 
+                         'View'}
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No documents available in this category yet.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-2">
+              <p className="text-muted-foreground">No documents found matching "{searchQuery}"</p>
+              <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>
+                Clear Search
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Help Section */}
       <Card>

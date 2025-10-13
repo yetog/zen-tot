@@ -8,12 +8,15 @@ export interface UploadedFile {
   uploadDate: Date;
   projectId?: string;
   metadata?: {
-    category?: 'benefits' | 'policies' | 'handbook' | 'onboarding';
+    category?: 'benefits' | 'policies' | 'handbook' | 'onboarding' | 'leave' | 'payroll' | 'wellness' | 'directory' | 'misc';
+    entryType?: 'document' | 'folder' | 'external-link';
     isDefault?: boolean;
     tags?: string[];
     summary?: string;
     googleDriveUrl?: string;
+    externalUrl?: string;
     fileType?: string;
+    documentCount?: number;
   };
 }
 

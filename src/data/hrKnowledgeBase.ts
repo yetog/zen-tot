@@ -1,21 +1,26 @@
-interface HRDocument {
+export interface HRDocument {
   id: string;
   title: string;
-  category: 'benefits' | 'policies' | 'handbook' | 'onboarding';
+  category: 'benefits' | 'policies' | 'handbook' | 'onboarding' | 'leave' | 'payroll' | 'wellness' | 'directory' | 'misc';
+  entryType: 'document' | 'folder' | 'external-link';
   content: string;
   summary: string;
   tags: string[];
   lastUpdated: string;
   isDefault: boolean;
   googleDriveUrl?: string;
-  fileType?: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'md';
+  externalUrl?: string;
+  fileType?: 'pdf' | 'docx' | 'xlsx' | 'folder' | 'external';
+  documentCount?: number;
 }
 
 export const hrKnowledgeBase: HRDocument[] = [
+  // Benefits Documents (Individual Documents with full content)
   {
     id: 'hdhp-ppo-comparison',
     title: 'HDHP vs PPO Medical Plan Comparison',
     category: 'benefits',
+    entryType: 'document',
     content: `HDHP (High Deductible Health Plan) vs PPO Medical Plan Comparison Guide
 
 Overview:
@@ -66,6 +71,7 @@ For questions, contact the HR Benefits team at benefits@ionos.com or schedule a 
     id: 'pto-policy',
     title: 'Paid Time Off (PTO) Policy',
     category: 'policies',
+    entryType: 'document',
     content: `IONOS Paid Time Off (PTO) Policy
 
 Effective Date: January 1, 2024
@@ -134,6 +140,7 @@ Contact the HR team at hr@ionos.com or call ext. 5000.`,
     id: 'new-hire-checklist',
     title: 'New Hire Onboarding Checklist',
     category: 'onboarding',
+    entryType: 'document',
     content: `IONOS New Hire Onboarding Checklist
 
 Welcome to IONOS! This checklist will guide you through your first 30 days.
@@ -203,5 +210,61 @@ Welcome to the team! We're excited to have you here.`,
     isDefault: true,
     googleDriveUrl: 'https://drive.google.com/file/d/SAMPLE_FILE_ID_3/view',
     fileType: 'pdf'
+  },
+
+  // Folder Links (No content extraction needed)
+  {
+    id: 'payroll-documents',
+    title: 'Payroll Documents',
+    category: 'payroll',
+    entryType: 'folder',
+    content: '',
+    summary: 'Access pay stubs, W-2 forms, tax documents, and payroll-related resources.',
+    tags: ['payroll', 'pay stub', 'W-2', 'taxes'],
+    lastUpdated: '2024-01-01',
+    isDefault: true,
+    googleDriveUrl: 'https://drive.google.com/drive/folders/SAMPLE_PAYROLL_FOLDER',
+    fileType: 'folder',
+    documentCount: 15
+  },
+  {
+    id: 'wellness-hub',
+    title: 'Wellness Resources',
+    category: 'wellness',
+    entryType: 'external-link',
+    content: '',
+    summary: 'Employee wellness programs, mental health resources, and fitness benefits.',
+    tags: ['wellness', 'mental health', 'fitness', 'employee assistance'],
+    lastUpdated: '2024-01-01',
+    isDefault: true,
+    externalUrl: 'https://ionos.us/wellness',
+    fileType: 'external'
+  },
+  {
+    id: 'team-directory',
+    title: 'Team Photos & Directory',
+    category: 'directory',
+    entryType: 'external-link',
+    content: '',
+    summary: 'Browse team member photos, contact information, and organizational charts.',
+    tags: ['team', 'directory', 'photos', 'contacts'],
+    lastUpdated: '2024-01-01',
+    isDefault: true,
+    externalUrl: 'https://ionos.us/pitchers',
+    fileType: 'external'
+  },
+  {
+    id: 'misc-resources',
+    title: 'Miscellaneous Resources',
+    category: 'misc',
+    entryType: 'folder',
+    content: '',
+    summary: 'Additional HR documents, forms, and company resources.',
+    tags: ['resources', 'forms', 'miscellaneous'],
+    lastUpdated: '2024-01-01',
+    isDefault: true,
+    googleDriveUrl: 'https://drive.google.com/drive/folders/SAMPLE_MISC_FOLDER',
+    fileType: 'folder',
+    documentCount: 8
   }
 ];
