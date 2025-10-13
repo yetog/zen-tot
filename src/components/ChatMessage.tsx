@@ -3,14 +3,15 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Bot, User } from 'lucide-react';
+import { Download, FileText, Bot, User, Volume2 } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   onSpeak?: (text: string) => void;
+  onRequestMoreDetails?: () => void;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onRequestMoreDetails }) => {
   const isUser = message.role === 'user';
   
   // Extract file citations from assistant messages
@@ -80,11 +81,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak }) =>
                 </div>
               )}
             </div>
-            {!isUser && onSpeak && (
-              <div className="mt-2">
-                <Button size="sm" variant="outline" className="text-xs" onClick={() => onSpeak(cleanContent)}>
-                  Send to TTS
-                </Button>
+            {!isUser && (onSpeak || onRequestMoreDetails) && (
+              <div className="flex gap-2 mt-2">
+                {onSpeak && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSpeak(cleanContent)}
+                  >
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    Send to TTS
+                  </Button>
+                )}
+                {onRequestMoreDetails && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRequestMoreDetails}
+                  >
+                    More Details
+                  </Button>
+                )}
               </div>
             )}
             

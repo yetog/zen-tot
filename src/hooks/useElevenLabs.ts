@@ -4,6 +4,8 @@ import { ttsService } from '@/services/ttsService';
 interface VoiceCoachingOptions {
   agentType?: 'sales' | 'marketing' | 'analysis' | 'default';
   whisperMode?: boolean; // For quiet coaching during calls
+  voiceId?: string;
+  speed?: number;
 }
 
 export const useElevenLabs = () => {
@@ -50,9 +52,10 @@ export const useElevenLabs = () => {
         message,
         options.agentType || 'sales',
         {
+          voiceId: options.voiceId,
           stability: options.whisperMode ? 0.9 : 0.75,
           similarityBoost: options.whisperMode ? 0.8 : 0.75,
-          speed: options.whisperMode ? 0.8 : 1.0
+          speed: options.speed || (options.whisperMode ? 0.8 : 1.0)
         }
       );
 

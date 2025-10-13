@@ -27,6 +27,36 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
   const [apiToken, setApiToken] = useState(ionosAI.getApiToken() || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // TTS settings
+  const [ttsVoice, setTtsVoice] = useState<string>(
+    localStorage.getItem('tts-voice') || 'XB0fDUnXU5powFXDhCwa' // Charlotte default
+  );
+  const [ttsSpeed, setTtsSpeed] = useState<number>(
+    parseFloat(localStorage.getItem('tts-speed') || '1.0')
+  );
+  const [availableVoices] = useState([
+    { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria' },
+    { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger' },
+    { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
+    { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura' },
+    { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie' },
+    { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George' },
+    { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum' },
+    { id: 'SAz9YHcvj6GT2YYXdXww', name: 'River' },
+    { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam' },
+    { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte' },
+    { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice' },
+    { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda' },
+    { id: 'bIHbv24MWmeRgasZH58o', name: 'Will' },
+    { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica' },
+    { id: 'cjVigY5qzO86Huf0OWal', name: 'Eric' },
+    { id: 'iP95p4xoKVk53GoZ742B', name: 'Chris' },
+    { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian' },
+    { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel' },
+    { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily' },
+    { id: 'pqHfZKP75CvOlQylNhV4', name: 'Bill' },
+  ]);
+  
   // TTS hook
   const { speakCoaching, isPlaying, stopSpeaking } = useElevenLabs();
   
@@ -108,12 +138,39 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
       if (isPlaying) {
         stopSpeaking();
       } else {
-        await speakCoaching(text, { agentType: 'default' });
+        await speakCoaching(text, { 
+          agentType: 'default',
+          voiceId: ttsVoice,
+          speed: ttsSpeed
+        });
       }
     } catch (error) {
       console.error('TTS error:', error);
       toast.error('Failed to play audio');
     }
+  };
+
+  const handleTtsVoiceChange = (voiceId: string) => {
+    setTtsVoice(voiceId);
+    localStorage.setItem('tts-voice', voiceId);
+  };
+
+  const handleTtsSpeedChange = (speed: number) => {
+    setTtsSpeed(speed);
+    localStorage.setItem('tts-speed', speed.toString());
+  };
+
+  const handleTtsPreview = async () => {
+    await handleSpeak('This is a preview of the selected voice and speed.');
+  };
+
+  const handleRequestMoreDetails = async () => {
+    setInputValue('Please provide more details about your last response');
+    // Trigger send after setting input
+    setTimeout(() => {
+      const form = document.querySelector('form');
+      if (form) form.requestSubmit();
+    }, 100);
   };
 
   const handleVoiceInput = async () => {
@@ -221,23 +278,73 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
       {/* Settings Panel */}
       {showSettings && (
         <div className="p-4 border-b border-border bg-secondary/50">
-          <div className="space-y-3">
-            <label className="text-sm font-medium">IONOS AI API Token:</label>
-            <Input
-              type="password"
-              value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
-              placeholder="Enter your IONOS AI API token"
-              className="text-xs"
-            />
-            <div className="flex space-x-2">
-              <Button onClick={handleSaveToken} size="sm" className="flex-1">
-                Save Token
-              </Button>
-              <Button onClick={clearChat} variant="outline" size="sm">
-                <Trash2 className="w-3 h-3 mr-1" />
-                Clear
-              </Button>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">IONOS AI API Token</label>
+              <Input
+                type="password"
+                value={apiToken}
+                onChange={(e) => setApiToken(e.target.value)}
+                placeholder="Enter your IONOS AI API token"
+                className="mb-3"
+              />
+              <div className="flex space-x-2">
+                <Button onClick={handleSaveToken} size="sm" className="flex-1">
+                  Save Token
+                </Button>
+                <Button onClick={clearChat} variant="outline" size="sm">
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Clear
+                </Button>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h3 className="text-sm font-semibold mb-3">Text-to-Speech Settings</h3>
+              
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="tts-voice" className="text-xs font-medium mb-1 block">
+                    Voice
+                  </label>
+                  <select
+                    id="tts-voice"
+                    value={ttsVoice}
+                    onChange={(e) => handleTtsVoiceChange(e.target.value)}
+                    className="w-full p-2 text-sm border rounded-md bg-background"
+                  >
+                    {availableVoices.map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="tts-speed" className="text-xs font-medium mb-1 block">
+                    Speed: {ttsSpeed.toFixed(1)}x
+                  </label>
+                  <input
+                    id="tts-speed"
+                    type="range"
+                    min="0.5"
+                    max="2.0"
+                    step="0.1"
+                    value={ttsSpeed}
+                    onChange={(e) => handleTtsSpeedChange(parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>0.5x</span>
+                    <span>2.0x</span>
+                  </div>
+                </div>
+
+                <Button onClick={handleTtsPreview} variant="outline" size="sm" className="w-full">
+                  Preview Voice
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -277,9 +384,9 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
                 key={message.id} 
                 message={message}
                 onSpeak={message.role === 'assistant' ? handleSpeak : undefined}
+                onRequestMoreDetails={message.role === 'assistant' ? handleRequestMoreDetails : undefined}
               />
             ))}
-        
         {isLoading && (
           <div className="flex justify-start mb-4">
             <div className="bg-secondary rounded-lg px-4 py-2">

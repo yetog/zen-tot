@@ -14,6 +14,13 @@ interface TTSOptions {
   speed?: number;
 }
 
+interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
+
 export class TTSService {
   private static instance: TTSService;
   private apiKey: string | null = null;
@@ -82,42 +89,114 @@ export class TTSService {
     }
 
     const voiceId = options.voiceId || this.getVoiceForAgent(agentType || 'default');
+    const speed = options.speed || 1.0;
     
-    const requestBody = {
-      text,
-      model_id: options.model || 'eleven_multilingual_v2',
-      voice_settings: {
-        stability: options.stability || 0.75,
-        similarity_boost: options.similarityBoost || 0.75,
-        style: 0.5,
-        use_speaker_boost: true
+    const voiceSettings: VoiceSettings = {
+      stability: options.stability || 0.75,
+      similarity_boost: options.similarityBoost || 0.75,
+      style: 0.5,
+      use_speaker_boost: true
+    };
+    
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: options.model || 'eleven_multilingual_v2',
+          voice_settings: voiceSettings,
+        }),
       }
+    );
+
+    if (!response.ok) {
+      throw new Error(`ElevenLabs API error: ${response.statusText}`);
+    }
+
+    const audioBlob = await response.blob();
+    
+    // Apply speed adjustment if needed
+    if (speed !== 1.0) {
+      const audioContext = new AudioContext();
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      const offlineContext = new OfflineAudioContext(
+        audioBuffer.numberOfChannels,
+        audioBuffer.length / speed,
+        audioBuffer.sampleRate
+      );
+      
+      const source = offlineContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.playbackRate.value = speed;
+      source.connect(offlineContext.destination);
+      source.start();
+      
+      const renderedBuffer = await offlineContext.startRendering();
+      
+      // Convert back to blob
+      const wavBlob = await this.audioBufferToWav(renderedBuffer);
+      return URL.createObjectURL(wavBlob);
+    }
+    
+    return URL.createObjectURL(audioBlob);
+  }
+
+  private audioBufferToWav(buffer: AudioBuffer): Promise<Blob> {
+    const length = buffer.length * buffer.numberOfChannels * 2 + 44;
+    const arrayBuffer = new ArrayBuffer(length);
+    const view = new DataView(arrayBuffer);
+    const channels: Float32Array[] = [];
+    let offset = 0;
+    let pos = 0;
+
+    // Write WAV header
+    const setUint16 = (data: number) => {
+      view.setUint16(pos, data, true);
+      pos += 2;
+    };
+    const setUint32 = (data: number) => {
+      view.setUint32(pos, data, true);
+      pos += 4;
     };
 
-    try {
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey
-          },
-          body: JSON.stringify(requestBody)
-        }
-      );
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // length = 16
+    setUint16(1); // PCM (uncompressed)
+    setUint16(buffer.numberOfChannels);
+    setUint32(buffer.sampleRate);
+    setUint32(buffer.sampleRate * 2 * buffer.numberOfChannels); // avg. bytes/sec
+    setUint16(buffer.numberOfChannels * 2); // block-align
+    setUint16(16); // 16-bit
+    setUint32(0x61746164); // "data" - chunk
+    setUint32(length - pos - 4); // chunk length
 
-      if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.statusText}`);
-      }
-
-      const audioBlob = await response.blob();
-      return URL.createObjectURL(audioBlob);
-    } catch (error) {
-      console.error('TTS generation error:', error);
-      throw error;
+    // Write interleaved data
+    for (let i = 0; i < buffer.numberOfChannels; i++) {
+      channels.push(buffer.getChannelData(i));
     }
+
+    while (pos < length) {
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+        view.setInt16(pos, sample, true);
+        pos += 2;
+      }
+      offset++;
+    }
+
+    return Promise.resolve(new Blob([arrayBuffer], { type: 'audio/wav' }));
   }
 
   async getAvailableVoices(): Promise<ElevenLabsVoice[]> {

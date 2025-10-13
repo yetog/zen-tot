@@ -72,20 +72,26 @@ export class IONOSAIService {
     const systemPrompt = agentName && agentName !== "AI Assistant" 
       ? `You are ${agentName}, a specialized AI assistant. Maintain your role identity throughout the conversation and respond in a way that's consistent with your expertise. 
 
+IMPORTANT: Keep responses concise and to the point (2-4 sentences max unless more detail is explicitly requested).
+
 Format your responses with proper markdown for better readability:
 - Use **bold** for important points and headings
 - Use bullet points and numbered lists for organization
 - Use proper line breaks and spacing
 - Structure information clearly with headers when appropriate
+- Focus on the most important information first
 
 Provide concise, actionable advice based on your specialization.`
       : `You are a helpful AI assistant capable of helping with a wide range of business and professional tasks. You are knowledgeable, professional, and adaptable to any topic or industry.
+
+IMPORTANT: Keep responses concise and to the point (2-4 sentences max unless more detail is explicitly requested).
 
 Format your responses with proper markdown for better readability:
 - Use **bold** for important points and headings  
 - Use bullet points and numbered lists for organization
 - Use proper line breaks and spacing
 - Structure information clearly with headers when appropriate
+- Focus on the most important information first
 
 You can assist with:
 - Business strategy and planning
@@ -106,7 +112,7 @@ Provide clear, actionable advice tailored to the user's specific needs.`;
         ...messages
       ],
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 500
     };
 
     try {

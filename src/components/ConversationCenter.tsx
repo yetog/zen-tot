@@ -8,7 +8,7 @@ interface ConversationCenterProps {
 
 export function ConversationCenter({ selectedFileIds = [], className = '' }: ConversationCenterProps) {
   return (
-    <div className={`h-[700px] ${className}`}>
+    <div className={`h-[900px] ${className}`}>
       <Chat selectedFileIds={selectedFileIds} className="h-full" />
     </div>
   );
