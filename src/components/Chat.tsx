@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Settings, Send, Sparkles, Download, Trash2, RefreshCw } from 'lucide-react';
+import { MessageCircle, X, Settings, Send, Sparkles, Download, Trash2, RefreshCw, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { useFileContext } from '@/contexts/FileContext';
 import { ChatMessage } from '@/components/ChatMessage';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { ionosAI } from '@/services/ionosAI';
+import { useElevenLabs } from '@/hooks/useElevenLabs';
+import { useAudioCapture } from '@/hooks/useAudioCapture';
 import { toast } from 'sonner';
 
 interface ChatProps {
@@ -24,6 +26,16 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
   const [showSettings, setShowSettings] = useState(false);
   const [apiToken, setApiToken] = useState(ionosAI.getApiToken() || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // TTS hook
+  const { speakCoaching, isPlaying, stopSpeaking } = useElevenLabs();
+  
+  // Voice input hook
+  const { isRecording, startRecording, stopRecording } = useAudioCapture({
+    onTranscript: (transcript) => {
+      setInputValue(prev => prev + (prev ? ' ' : '') + transcript);
+    }
+  });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,6 +100,33 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
       toast.success('API token saved successfully');
     } else {
       toast.error('Please enter a valid API token');
+    }
+  };
+
+  const handleSpeak = async (text: string) => {
+    try {
+      if (isPlaying) {
+        stopSpeaking();
+      } else {
+        await speakCoaching(text, { agentType: 'default' });
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+      toast.error('Failed to play audio');
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    try {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        await startRecording();
+        toast.info('Listening...');
+      }
+    } catch (error) {
+      console.error('Voice input error:', error);
+      toast.error('Failed to access microphone');
     }
   };
 
@@ -233,9 +272,13 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
           </div>
         )}
         
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+            {messages.map((message) => (
+              <ChatMessage 
+                key={message.id} 
+                message={message}
+                onSpeak={message.role === 'assistant' ? handleSpeak : undefined}
+              />
+            ))}
         
         {isLoading && (
           <div className="flex justify-start mb-4">
@@ -259,13 +302,24 @@ export const Chat: React.FC<ChatProps> = ({ selectedFileIds = [], className = ""
                 ? "Set API token in settings" 
                 : "Ask HR questions about benefits, policies, or procedures..."
             }
-            disabled={!ionosAI.getApiToken() || isLoading}
+            disabled={!ionosAI.getApiToken() || isLoading || isRecording}
             className="flex-1"
           />
           <Button
+            type="button"
+            size="icon"
+            onClick={handleVoiceInput}
+            disabled={!ionosAI.getApiToken() || isLoading}
+            variant={isRecording ? "destructive" : "outline"}
+            className={isRecording ? "animate-pulse" : ""}
+            title="Voice input"
+          >
+            {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </Button>
+          <Button
             type="submit"
             size="icon"
-            disabled={!inputValue.trim() || !ionosAI.getApiToken() || isLoading}
+            disabled={!inputValue.trim() || !ionosAI.getApiToken() || isLoading || isRecording}
           >
             <Send className="w-4 h-4" />
           </Button>
