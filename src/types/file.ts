@@ -12,6 +12,8 @@ export interface UploadedFile {
     isDefault?: boolean;
     tags?: string[];
     summary?: string;
+    googleDriveUrl?: string;
+    fileType?: string;
   };
 }
 
