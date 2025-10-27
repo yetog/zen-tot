@@ -160,7 +160,7 @@ export function HRResources({ className = '' }: HRResourcesProps) {
           <div className="text-center space-y-3">
             <h3 className="font-semibold">Need Help Finding Something?</h3>
             <p className="text-sm text-muted-foreground">
-              Upload your HR documents to the Knowledge Base tab, then ask Pat in the Ask HR Chat tab for instant answers.
+              For personal documents like W-2s or pay stubs, use the Knowledge Base tab to upload and chat with Pat for instant answers.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button variant="outline" size="sm" asChild>
