@@ -29,13 +29,8 @@ export interface Note {
   tags?: string[];
   starred?: boolean;
   
-  // Metadata (YouTube/Web)
-  metadata?: {
-    author?: string;
-    channel?: string;
-    publishedAt?: string;
-    description?: string;
-  };
+  // Metadata (flexible for different note types)
+  metadata?: Record<string, any>;
 }
 
 export interface Folder {
