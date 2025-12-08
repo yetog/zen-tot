@@ -1,72 +1,89 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Ask HR Design System - White + Dark Blue Professional Theme */
+/* Zen TOT Design System - Contemporary Dark Theme */
 
 @layer base {
   :root {
-    /* Light Mode - White + Dark Blue HR Theme */
-    --background: 0 0% 100%;           /* Pure white */
-    --foreground: 220 25% 15%;         /* Dark blue-gray text */
+    /* Light Mode */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
 
-    --card: 0 0% 100%;                 /* White cards */
-    --card-foreground: 220 25% 15%;    /* Dark blue-gray text */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 15%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 220 85% 45%;            /* Dark blue (IONOS-style) */
-    --primary-foreground: 0 0% 100%;   /* White text on blue */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 95%;          /* Light blue-gray */
-    --secondary-foreground: 220 25% 15%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 10%;
 
-    --muted: 220 15% 92%;              /* Very light gray */
-    --muted-foreground: 220 15% 45%;   /* Medium gray */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 220 85% 55%;             /* Lighter blue for accents */
+    --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;             /* Light border */
-    --input: 220 20% 95%;              /* Light input background */
-    --ring: 220 85% 45%;               /* Blue focus ring */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 262 83% 58%;
   }
 
   .dark {
-    --background: 220 25% 10%;         /* Very dark blue */
-    --foreground: 0 0% 98%;            /* Almost white text */
+    --background: 240 10% 4%;
+    --foreground: 0 0% 95%;
     
-    --card: 220 25% 12%;               /* Dark blue cards */
-    --card-foreground: 0 0% 98%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 95%;
     
-    --popover: 220 25% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 95%;
     
-    --primary: 220 85% 55%;            /* Brighter blue for dark mode */
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 220 25% 18%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 5% 14%;
+    --secondary-foreground: 0 0% 95%;
     
-    --muted: 220 20% 20%;
-    --muted-foreground: 220 15% 70%;
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 5% 65%;
     
-    --accent: 220 85% 60%;
+    --accent: 262 83% 65%;
     --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 220 20% 25%;
-    --input: 220 20% 18%;
-    --ring: 220 85% 55%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 262 83% 58%;
+
+    --sidebar-background: 240 10% 5%;
+    --sidebar-foreground: 240 5% 65%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 14%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 5% 18%;
+    --sidebar-ring: 262 83% 58%;
   }
 }
 
@@ -76,8 +93,21 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+}

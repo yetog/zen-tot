@@ -3,18 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { FileProvider } from "@/contexts/FileContext";
+import { NotesProvider } from "@/contexts/NotesContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Workspace from "./pages/Workspace";
-import Agents from "./pages/Agents";
-import Products from "./pages/Products";
+import Dashboard from "./pages/Dashboard";
+import NoteDetail from "./pages/NoteDetail";
+import Assistant from "./pages/Assistant";
 import Settings from "./pages/Settings";
-import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 const queryClient = new QueryClient();
 
@@ -22,45 +21,43 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <FileProvider projectId="default">
+        <NotesProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <AppSidebar />
-              <SidebarInset className="flex-1">
-                <header className="sticky top-0 z-40 h-14 flex items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-                  <div className="flex items-center gap-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <BreadcrumbNav />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-2">
-                      <span className="text-lg font-bold">Ask <span className="text-primary">HR</span></span>
-                      <span className="text-xs text-muted-foreground ml-2">Your 24/7 HR Assistant</span>
+            <SidebarProvider>
+              <div className="min-h-screen flex w-full">
+                <AppSidebar />
+                <SidebarInset className="flex-1">
+                  <header className="sticky top-0 z-40 h-14 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
+                    <div className="flex items-center gap-4">
+                      <SidebarTrigger className="-ml-1" />
                     </div>
-                    <ThemeToggle />
-                  </div>
-                </header>
+                    <div className="flex items-center gap-4">
+                      <div className="hidden sm:flex items-center gap-2">
+                        <img src={logo} alt="Zen TOT" className="w-8 h-8 rounded-lg" />
+                        <span className="text-lg font-bold">Zen <span className="text-primary">TOT</span></span>
+                      </div>
+                      <ThemeToggle />
+                    </div>
+                  </header>
 
-                <main className="animate-fade-in">
-                  <Routes>
-                    <Route path="/" element={<Workspace />} />
-                    <Route path="/workspace" element={<Workspace />} />
-                    <Route path="/agents" element={<Agents />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/tools" element={<Tools />} />
-                    <Route path="/settings" element={<Settings />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </SidebarInset>
-            </div>
-          </SidebarProvider>
+                  <main className="animate-fade-in">
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/note/:id" element={<NoteDetail />} />
+                      <Route path="/assistant" element={<Assistant />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/folders" element={<Dashboard />} />
+                      <Route path="/tags" element={<Dashboard />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                </SidebarInset>
+              </div>
+            </SidebarProvider>
           </BrowserRouter>
-        </FileProvider>
+        </NotesProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
