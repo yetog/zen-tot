@@ -141,9 +141,17 @@ export default {
 					'0%': { transform: 'rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg)' }
 				},
-				'orbit': {
+			'orbit': {
 					'0%': { transform: 'rotate(0deg) translateX(100px) rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg) translateX(100px) rotate(-360deg)' }
+				},
+				'breathe': {
+					'0%, 100%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.02)' }
+				},
+				'speaking-glow': {
+					'0%': { boxShadow: '0 0 30px hsl(var(--primary) / 0.5), 0 0 60px hsl(var(--primary) / 0.3)' },
+					'100%': { boxShadow: '0 0 50px hsl(var(--primary) / 0.7), 0 0 100px hsl(var(--accent) / 0.5)' }
 				}
 			},
 			animation: {
@@ -166,7 +174,9 @@ export default {
 				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
 				'scan': 'scan 2s linear infinite',
 				'rotate-slow': 'rotate-slow 20s linear infinite',
-				'orbit': 'orbit 10s linear infinite'
+			'orbit': 'orbit 10s linear infinite',
+				'breathe': 'breathe 4s ease-in-out infinite',
+				'speaking-glow': 'speaking-glow 0.5s ease-in-out infinite alternate'
 			},
 			transitionProperty: {
 				'height': 'height',
