@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
+import * as d3 from 'd3';
 import { useNavigate } from 'react-router-dom';
 import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import { NoteType } from '@/types/note';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { findSimilarNotes } from '@/services/embeddingService';
 
-interface GraphNode {
+interface GraphNode extends d3.SimulationNodeDatum {
   id: string;
   name: string;
   type: NoteType | 'tag' | 'folder';
@@ -33,13 +33,11 @@ interface GraphNode {
   isFolder?: boolean;
   folderId?: string;
   starred?: boolean;
-  x?: number;
-  y?: number;
 }
 
-interface GraphLink {
-  source: string;
-  target: string;
+interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
+  source: string | GraphNode;
+  target: string | GraphNode;
   value: number;
   type: 'tag' | 'folder' | 'similarity';
 }
@@ -59,7 +57,9 @@ const typeColors: Record<string, string> = {
 const KnowledgeGraph: React.FC = () => {
   const navigate = useNavigate();
   const { notes, folders } = useNotes();
-  const graphRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
+  const transformRef = useRef(d3.zoomIdentity);
   const { playClick, playWhoosh, playHover } = useSoundEffects();
   
   const [filterType, setFilterType] = useState<string>('all');
@@ -70,23 +70,7 @@ const KnowledgeGraph: React.FC = () => {
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
-  useEffect(() => {
-    const handleResize = () => {
-      const container = document.getElementById('graph-container');
-      if (container) {
-        setDimensions({
-          width: container.clientWidth,
-          height: container.clientHeight,
-        });
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Build graph data with semantic connections
+  // Build graph data
   const graphData = useMemo(() => {
     const nodes: GraphNode[] = [];
     const links: GraphLink[] = [];
@@ -102,7 +86,6 @@ const KnowledgeGraph: React.FC = () => {
       filteredNotes = filteredNotes.filter(n => n.folderId === filterFolder);
     }
 
-    // Create note nodes
     filteredNotes.forEach(note => {
       const contentLength = (note.transcript?.length || 0) + (note.extractedText?.length || 0);
       nodes.push({
@@ -115,7 +98,6 @@ const KnowledgeGraph: React.FC = () => {
         starred: note.starred,
       });
 
-      // Create tag connections
       if (showTags && note.tags) {
         note.tags.forEach(tagName => {
           const tagId = `tag-${tagName}`;
@@ -139,7 +121,6 @@ const KnowledgeGraph: React.FC = () => {
         });
       }
 
-      // Create folder connections
       if (showFolders && note.folderId) {
         const folder = folders.find(f => f.id === note.folderId);
         if (folder) {
@@ -164,11 +145,9 @@ const KnowledgeGraph: React.FC = () => {
         }
       }
 
-      // Create similarity connections
       if (showSimilarity) {
         const similarNotes = findSimilarNotes(note, filteredNotes, 3);
         similarNotes.forEach(({ note: similarNote, similarity }) => {
-          // Avoid duplicate links
           const linkExists = links.some(l => 
             (l.source === note.id && l.target === similarNote.id) ||
             (l.source === similarNote.id && l.target === note.id)
@@ -188,73 +167,265 @@ const KnowledgeGraph: React.FC = () => {
     return { nodes, links };
   }, [notes, folders, filterType, filterFolder, showTags, showFolders, showSimilarity]);
 
-  const handleNodeClick = useCallback((node: any) => {
-    playClick();
-    if (node.isTag || node.isFolder) return;
-    navigate(`/note/${node.id}`);
-  }, [navigate, playClick]);
+  // Handle resize
+  useEffect(() => {
+    const handleResize = () => {
+      const container = document.getElementById('graph-container');
+      if (container) {
+        setDimensions({
+          width: container.clientWidth,
+          height: container.clientHeight,
+        });
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // D3 Force Simulation
+  useEffect(() => {
+    if (!canvasRef.current || graphData.nodes.length === 0) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const nodes = graphData.nodes.map(d => ({ ...d }));
+    const links = graphData.links.map(d => ({ ...d }));
+
+    // Create simulation
+    const simulation = d3.forceSimulation<GraphNode>(nodes)
+      .force('link', d3.forceLink<GraphNode, GraphLink>(links)
+        .id(d => d.id)
+        .distance(80)
+        .strength(0.5))
+      .force('charge', d3.forceManyBody().strength(-150))
+      .force('center', d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
+      .force('collision', d3.forceCollide<GraphNode>().radius(d => d.val + 10));
+
+    simulationRef.current = simulation;
+
+    // Render function
+    const render = () => {
+      ctx.save();
+      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+      
+      ctx.translate(transformRef.current.x, transformRef.current.y);
+      ctx.scale(transformRef.current.k, transformRef.current.k);
+
+      // Draw links
+      links.forEach(link => {
+        const source = link.source as GraphNode;
+        const target = link.target as GraphNode;
+        if (source.x === undefined || source.y === undefined || 
+            target.x === undefined || target.y === undefined) return;
+
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+        
+        const linkColor = link.type === 'similarity' ? 'rgba(139,92,246,0.4)' :
+                         link.type === 'folder' ? 'rgba(249,115,22,0.4)' : 
+                         'rgba(6,182,212,0.3)';
+        ctx.strokeStyle = linkColor;
+        ctx.lineWidth = link.value;
+        ctx.stroke();
+
+        // Draw particles on links
+        const particleColor = link.type === 'similarity' ? '#8B5CF6' :
+                             link.type === 'folder' ? '#F97316' : '#06B6D4';
+        const t = (Date.now() % 3000) / 3000;
+        const px = source.x + (target.x - source.x) * t;
+        const py = source.y + (target.y - source.y) * t;
+        
+        ctx.beginPath();
+        ctx.arc(px, py, 2, 0, 2 * Math.PI);
+        ctx.fillStyle = particleColor;
+        ctx.fill();
+      });
+
+      // Draw nodes
+      nodes.forEach(node => {
+        if (node.x === undefined || node.y === undefined) return;
+        
+        const size = node.val || 5;
+        const color = node.color || '#6366F1';
+
+        // Glow effect
+        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 2);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(0.5, `${color}40`);
+        gradient.addColorStop(1, 'transparent');
+        
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, size * 2, 0, 2 * Math.PI);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Main node
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Starred highlight
+        if (node.starred) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, size + 3, 0, 2 * Math.PI);
+          ctx.strokeStyle = '#FFD700';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Inner highlight
+        ctx.beginPath();
+        ctx.arc(node.x - size * 0.3, node.y - size * 0.3, size * 0.3, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fill();
+      });
+
+      ctx.restore();
+    };
+
+    simulation.on('tick', render);
+
+    // Zoom behavior
+    const zoom = d3.zoom<HTMLCanvasElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        transformRef.current = event.transform;
+        render();
+      });
+
+    d3.select(canvas).call(zoom);
+
+    // Drag behavior
+    const drag = d3.drag<HTMLCanvasElement, unknown>()
+      .subject((event) => {
+        const [x, y] = transformRef.current.invert([event.x, event.y]);
+        return nodes.find(n => {
+          const dx = (n.x || 0) - x;
+          const dy = (n.y || 0) - y;
+          return Math.sqrt(dx * dx + dy * dy) < (n.val || 5) + 5;
+        });
+      })
+      .on('start', (event) => {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        const node = event.subject as GraphNode;
+        node.fx = node.x;
+        node.fy = node.y;
+      })
+      .on('drag', (event) => {
+        const node = event.subject as GraphNode;
+        const [x, y] = transformRef.current.invert([event.x, event.y]);
+        node.fx = x;
+        node.fy = y;
+      })
+      .on('end', (event) => {
+        if (!event.active) simulation.alphaTarget(0);
+        const node = event.subject as GraphNode;
+        node.fx = null;
+        node.fy = null;
+      });
+
+    d3.select(canvas).call(drag);
+
+    // Click and hover handling
+    const handleCanvasClick = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const [x, y] = transformRef.current.invert([
+        event.clientX - rect.left,
+        event.clientY - rect.top
+      ]);
+      
+      const clickedNode = nodes.find(n => {
+        const dx = (n.x || 0) - x;
+        const dy = (n.y || 0) - y;
+        return Math.sqrt(dx * dx + dy * dy) < (n.val || 5) + 5;
+      });
+
+      if (clickedNode && !clickedNode.isTag && !clickedNode.isFolder) {
+        playClick();
+        navigate(`/note/${clickedNode.id}`);
+      }
+    };
+
+    const handleCanvasMouseMove = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const [x, y] = transformRef.current.invert([
+        event.clientX - rect.left,
+        event.clientY - rect.top
+      ]);
+      
+      const hovered = nodes.find(n => {
+        const dx = (n.x || 0) - x;
+        const dy = (n.y || 0) - y;
+        return Math.sqrt(dx * dx + dy * dy) < (n.val || 5) + 5;
+      });
+
+      if (hovered && !hovered.isTag && !hovered.isFolder && hovered !== hoveredNode) {
+        playHover();
+      }
+      setHoveredNode(hovered || null);
+      canvas.style.cursor = hovered && !hovered.isTag && !hovered.isFolder ? 'pointer' : 'grab';
+    };
+
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousemove', handleCanvasMouseMove);
+
+    // Animation loop for particles
+    let animationId: number;
+    const animate = () => {
+      render();
+      animationId = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      simulation.stop();
+      canvas.removeEventListener('click', handleCanvasClick);
+      canvas.removeEventListener('mousemove', handleCanvasMouseMove);
+      cancelAnimationFrame(animationId);
+    };
+  }, [graphData, dimensions, navigate, playClick, playHover]);
 
   const handleZoomIn = () => {
     playClick();
-    if (graphRef.current) {
-      graphRef.current.zoom(graphRef.current.zoom() * 1.5, 500);
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const zoom = d3.zoom<HTMLCanvasElement, unknown>();
+      d3.select(canvas).transition().duration(500).call(
+        zoom.scaleTo, transformRef.current.k * 1.5
+      );
     }
   };
 
   const handleZoomOut = () => {
     playClick();
-    if (graphRef.current) {
-      graphRef.current.zoom(graphRef.current.zoom() / 1.5, 500);
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const zoom = d3.zoom<HTMLCanvasElement, unknown>();
+      d3.select(canvas).transition().duration(500).call(
+        zoom.scaleTo, transformRef.current.k / 1.5
+      );
     }
   };
 
   const handleReset = () => {
     playWhoosh();
-    if (graphRef.current) {
-      graphRef.current.centerAt(0, 0, 1000);
-      graphRef.current.zoom(1, 1000);
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const zoom = d3.zoom<HTMLCanvasElement, unknown>();
+      d3.select(canvas).transition().duration(1000).call(
+        zoom.transform, d3.zoomIdentity.translate(0, 0).scale(1)
+      );
+      transformRef.current = d3.zoomIdentity;
     }
   };
 
   const noteTypes = ['all', 'audio', 'pdf', 'youtube', 'text', 'web', 'image'];
-
-  // Custom node rendering
-  const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
-    const size = node.val || 5;
-    const color = node.color || '#6366F1';
-    
-    // Draw glow effect
-    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 2);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(0.5, `${color}40`);
-    gradient.addColorStop(1, 'transparent');
-    
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, size * 2, 0, 2 * Math.PI);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    
-    // Draw main node
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    ctx.fill();
-    
-    // Add highlight for starred nodes
-    if (node.starred) {
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, size + 3, 0, 2 * Math.PI);
-      ctx.strokeStyle = '#FFD700';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    
-    // Draw inner highlight
-    ctx.beginPath();
-    ctx.arc(node.x - size * 0.3, node.y - size * 0.3, size * 0.3, 0, 2 * Math.PI);
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fill();
-  }, []);
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-background">
@@ -268,7 +439,7 @@ const KnowledgeGraph: React.FC = () => {
             <div>
               <h1 className="font-semibold flex items-center gap-2">
                 Knowledge Graph 
-                <Badge variant="outline" className="text-xs">2D</Badge>
+                <Badge variant="outline" className="text-xs">D3</Badge>
               </h1>
               <p className="text-sm text-muted-foreground">
                 Visualize connections between {graphData.nodes.filter(n => !n.isTag && !n.isFolder).length} notes
@@ -371,43 +542,12 @@ const KnowledgeGraph: React.FC = () => {
             </p>
           </div>
         ) : (
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
+          <canvas
+            ref={canvasRef}
             width={dimensions.width}
             height={dimensions.height}
-            backgroundColor="transparent"
-            nodeCanvasObject={paintNode}
-            nodePointerAreaPaint={(node: any, color, ctx) => {
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, node.val || 5, 0, 2 * Math.PI);
-              ctx.fillStyle = color;
-              ctx.fill();
-            }}
-            linkColor={(link: any) => 
-              link.type === 'similarity' ? 'rgba(139,92,246,0.4)' :
-              link.type === 'folder' ? 'rgba(249,115,22,0.4)' : 
-              'rgba(6,182,212,0.3)'
-            }
-            linkWidth={(link: any) => link.value}
-            linkDirectionalParticles={2}
-            linkDirectionalParticleSpeed={0.005}
-            linkDirectionalParticleWidth={2}
-            linkDirectionalParticleColor={(link: any) =>
-              link.type === 'similarity' ? '#8B5CF6' :
-              link.type === 'folder' ? '#F97316' :
-              '#06B6D4'
-            }
-            onNodeClick={handleNodeClick}
-            onNodeHover={(node: any) => {
-              if (node && !node.isTag && !node.isFolder) {
-                playHover();
-              }
-              setHoveredNode(node as GraphNode | null);
-            }}
-            enableNodeDrag={true}
-            enableZoomInteraction={true}
-            enablePanInteraction={true}
+            className="absolute inset-0"
+            style={{ cursor: 'grab' }}
           />
         )}
 
