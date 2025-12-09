@@ -1,6 +1,5 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sphere, MeshDistortMaterial, Float, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface AvatarCoreProps {
@@ -9,15 +8,24 @@ interface AvatarCoreProps {
 }
 
 const AvatarCore: React.FC<AvatarCoreProps> = ({ isSpeaking, isConnected }) => {
+  const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const eyeLeftRef = useRef<THREE.Mesh>(null);
   const eyeRightRef = useRef<THREE.Mesh>(null);
   const mouthRef = useRef<THREE.Mesh>(null);
+  const ring1Ref = useRef<THREE.Mesh>(null);
+  const ring2Ref = useRef<THREE.Mesh>(null);
   
-  // Breathing animation + lip sync
+  // Animation loop
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
+    
+    // Floating animation (replaces Float from drei)
+    if (groupRef.current) {
+      groupRef.current.position.y = Math.sin(time * 2) * 0.1;
+      groupRef.current.rotation.y = Math.sin(time * 0.5) * 0.1;
+    }
     
     if (meshRef.current) {
       // Breathing effect
@@ -51,10 +59,15 @@ const AvatarCore: React.FC<AvatarCoreProps> = ({ isSpeaking, isConnected }) => {
         mouthRef.current.scale.y = lipSync * 3;
         mouthRef.current.scale.x = 1 + lipSync * 0.5;
       } else {
-        // Subtle smile when idle
         mouthRef.current.scale.y = 0.3;
         mouthRef.current.scale.x = 1;
       }
+    }
+    
+    // Animate speaking rings
+    if (ring1Ref.current && ring2Ref.current && isSpeaking) {
+      ring1Ref.current.rotation.z = time * 2;
+      ring2Ref.current.rotation.z = -time * 1.5;
     }
   });
 
@@ -63,82 +76,78 @@ const AvatarCore: React.FC<AvatarCoreProps> = ({ isSpeaking, isConnected }) => {
   const glowColor = useMemo(() => new THREE.Color('#e879f9'), []);
 
   return (
-    <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-      <group>
-        {/* Outer glow sphere */}
-        <mesh ref={glowRef} scale={1.3}>
-          <sphereGeometry args={[1, 32, 32]} />
-          <meshBasicMaterial 
-            color={glowColor} 
-            transparent 
-            opacity={0.1} 
-          />
+    <group ref={groupRef}>
+      {/* Outer glow sphere */}
+      <mesh ref={glowRef} scale={1.3}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial 
+          color={glowColor} 
+          transparent 
+          opacity={0.1} 
+        />
+      </mesh>
+      
+      {/* Main avatar body */}
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          color={primaryColor}
+          roughness={0.2}
+          metalness={0.8}
+        />
+      </mesh>
+      
+      {/* Face features */}
+      <group position={[0, 0.1, 0.9]}>
+        {/* Left eye */}
+        <mesh ref={eyeLeftRef} position={[-0.25, 0.15, 0]}>
+          <sphereGeometry args={[0.12, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
         </mesh>
         
-        {/* Main avatar body */}
-        <Sphere ref={meshRef} args={[1, 64, 64]}>
-          <MeshDistortMaterial
-            color={primaryColor}
-            attach="material"
-            distort={isSpeaking ? 0.3 : 0.1}
-            speed={isSpeaking ? 4 : 1.5}
-            roughness={0.2}
-            metalness={0.8}
+        {/* Right eye */}
+        <mesh ref={eyeRightRef} position={[0.25, 0.15, 0]}>
+          <sphereGeometry args={[0.12, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
+        </mesh>
+        
+        {/* Left pupil */}
+        <mesh position={[-0.25, 0.15, 0.08]}>
+          <sphereGeometry args={[0.06, 16, 16]} />
+          <meshStandardMaterial color="#1a1a2e" />
+        </mesh>
+        
+        {/* Right pupil */}
+        <mesh position={[0.25, 0.15, 0.08]}>
+          <sphereGeometry args={[0.06, 16, 16]} />
+          <meshStandardMaterial color="#1a1a2e" />
+        </mesh>
+        
+        {/* Mouth */}
+        <mesh ref={mouthRef} position={[0, -0.2, 0]}>
+          <capsuleGeometry args={[0.08, 0.2, 8, 16]} />
+          <meshStandardMaterial 
+            color={accentColor} 
+            emissive={isSpeaking ? accentColor : primaryColor}
+            emissiveIntensity={isSpeaking ? 0.8 : 0.2}
           />
-        </Sphere>
-        
-        {/* Face features */}
-        <group position={[0, 0.1, 0.9]}>
-          {/* Left eye */}
-          <mesh ref={eyeLeftRef} position={[-0.25, 0.15, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
-            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-          </mesh>
-          
-          {/* Right eye */}
-          <mesh ref={eyeRightRef} position={[0.25, 0.15, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
-            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-          </mesh>
-          
-          {/* Left pupil */}
-          <mesh position={[-0.25, 0.15, 0.08]}>
-            <sphereGeometry args={[0.06, 16, 16]} />
-            <meshStandardMaterial color="#1a1a2e" />
-          </mesh>
-          
-          {/* Right pupil */}
-          <mesh position={[0.25, 0.15, 0.08]}>
-            <sphereGeometry args={[0.06, 16, 16]} />
-            <meshStandardMaterial color="#1a1a2e" />
-          </mesh>
-          
-          {/* Mouth */}
-          <mesh ref={mouthRef} position={[0, -0.2, 0]}>
-            <capsuleGeometry args={[0.08, 0.2, 8, 16]} />
-            <meshStandardMaterial 
-              color={accentColor} 
-              emissive={isSpeaking ? accentColor : primaryColor}
-              emissiveIntensity={isSpeaking ? 0.8 : 0.2}
-            />
-          </mesh>
-        </group>
-        
-        {/* Floating rings when speaking */}
-        {isSpeaking && (
-          <>
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-              <ringGeometry args={[1.3, 1.35, 64]} />
-              <meshBasicMaterial color={glowColor} transparent opacity={0.6} />
-            </mesh>
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.8, 0]}>
-              <ringGeometry args={[1.5, 1.53, 64]} />
-              <meshBasicMaterial color={accentColor} transparent opacity={0.4} />
-            </mesh>
-          </>
-        )}
+        </mesh>
       </group>
-    </Float>
+      
+      {/* Floating rings when speaking */}
+      {isSpeaking && (
+        <>
+          <mesh ref={ring1Ref} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+            <ringGeometry args={[1.3, 1.35, 64]} />
+            <meshBasicMaterial color={glowColor} transparent opacity={0.6} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh ref={ring2Ref} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.8, 0]}>
+            <ringGeometry args={[1.5, 1.53, 64]} />
+            <meshBasicMaterial color={accentColor} transparent opacity={0.4} side={THREE.DoubleSide} />
+          </mesh>
+        </>
+      )}
+    </group>
   );
 };
 
@@ -172,17 +181,6 @@ const ZenAvatar3D: React.FC<ZenAvatar3DProps> = ({
         />
         
         <AvatarCore isSpeaking={isSpeaking} isConnected={isConnected} />
-        
-        <ContactShadows
-          position={[0, -2, 0]}
-          opacity={0.4}
-          scale={10}
-          blur={2}
-          far={4}
-          color="#a855f7"
-        />
-        
-        <Environment preset="night" />
       </Canvas>
     </div>
   );
