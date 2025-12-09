@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { useNotes } from '@/contexts/NotesContext';
 import { formatDistanceToNow } from 'date-fns';
 import SourcePreview from '@/components/SourcePreview';
@@ -15,7 +22,7 @@ import { toast } from 'sonner';
 const NoteDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getNote, toggleStar, deleteNote, updateNote } = useNotes();
+  const { getNote, toggleStar, deleteNote, updateNote, folders, tags } = useNotes();
   const [activeTab, setActiveTab] = useState('overview');
   
   const note = id ? getNote(id) : undefined;
@@ -92,28 +99,95 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
     toast.success('Note exported as Markdown');
   };
 
+  const handleAssignFolder = (folderId: string | undefined) => {
+    updateNote(note.id, { folderId });
+    toast.success(folderId ? 'Note moved to folder' : 'Note removed from folder');
+  };
+
+  const handleToggleTag = (tagName: string) => {
+    const currentTags = note.tags || [];
+    const newTags = currentTags.includes(tagName)
+      ? currentTags.filter(t => t !== tagName)
+      : [...currentTags, tagName];
+    updateNote(note.id, { tags: newTags });
+    toast.success(currentTags.includes(tagName) ? 'Tag removed' : 'Tag added');
+  };
+
   const noteContent = note.transcript || note.extractedText || '';
+  const currentFolder = folders.find(f => f.id === note.folderId);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={() => navigate('/')}>
+        <Button variant="ghost" onClick={() => navigate('/')} className="transition-transform hover:scale-105">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => toggleStar(note.id)}>
-            <Star className={`h-5 w-5 ${note.starred ? 'fill-primary text-primary' : ''}`} />
+          <Button variant="ghost" size="icon" onClick={() => toggleStar(note.id)} className="transition-transform hover:scale-110">
+            <Star className={`h-5 w-5 transition-all ${note.starred ? 'fill-primary text-primary scale-110' : ''}`} />
           </Button>
-          <Button variant="ghost" size="icon">
+          
+          {/* Folder Assignment */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="transition-transform hover:scale-110">
+                <FolderOpen className={`h-5 w-5 ${currentFolder ? 'text-primary' : ''}`} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border border-border z-50">
+              <DropdownMenuItem onClick={() => handleAssignFolder(undefined)} className={!note.folderId ? 'bg-primary/10' : ''}>
+                No Folder
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {folders.map(folder => (
+                <DropdownMenuItem 
+                  key={folder.id} 
+                  onClick={() => handleAssignFolder(folder.id)}
+                  className={note.folderId === folder.id ? 'bg-primary/10' : ''}
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  {folder.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Tag Assignment */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="transition-transform hover:scale-110">
+                <Hash className={`h-5 w-5 ${note.tags?.length ? 'text-primary' : ''}`} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border border-border z-50">
+              {tags.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">No tags created</div>
+              ) : (
+                tags.map(tag => (
+                  <DropdownMenuItem 
+                    key={tag.id} 
+                    onClick={() => handleToggleTag(tag.name)}
+                    className={note.tags?.includes(tag.name) ? 'bg-primary/10' : ''}
+                  >
+                    <Hash className="h-4 w-4 mr-2" />
+                    {tag.name}
+                    {note.tags?.includes(tag.name) && <span className="ml-auto">✓</span>}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="ghost" size="icon" className="transition-transform hover:scale-110">
             <Share className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleExportMarkdown}>
+          <Button variant="ghost" size="icon" onClick={handleExportMarkdown} className="transition-transform hover:scale-110">
             <Download className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleDelete}>
+          <Button variant="ghost" size="icon" onClick={handleDelete} className="transition-transform hover:scale-110">
             <Trash2 className="h-5 w-5 text-destructive" />
           </Button>
         </div>
@@ -121,10 +195,22 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
 
       {/* Title & Meta */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
           <Badge variant="secondary" className="uppercase text-xs">
             {note.type}
           </Badge>
+          {currentFolder && (
+            <Badge variant="outline" className="gap-1">
+              <FolderOpen className="h-3 w-3" />
+              {currentFolder.name}
+            </Badge>
+          )}
+          {note.tags?.map(tag => (
+            <Badge key={tag} variant="outline" className="gap-1">
+              <Hash className="h-3 w-3" />
+              {tag}
+            </Badge>
+          ))}
           {note.status === 'processing' && (
             <Badge variant="outline" className="gap-1">
               <Loader2 className="h-3 w-3 animate-spin" />

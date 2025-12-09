@@ -53,29 +53,31 @@ const NoteCard: React.FC<{
   onOpen: () => void;
   onToggleStar: () => void;
   onDelete: () => void;
-}> = ({ note, onOpen, onToggleStar, onDelete }) => {
+  index: number;
+}> = ({ note, onOpen, onToggleStar, onDelete, index }) => {
   const Icon = typeIcons[note.type];
   
   return (
     <div 
-      className="group relative p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer hover-lift"
+      className="group relative p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer hover-lift animate-fade-in"
       onClick={onOpen}
+      style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className={`p-2 rounded-lg ${typeColors[note.type]}`}>
+        <div className={`p-2 rounded-lg ${typeColors[note.type]} transition-transform group-hover:scale-110`}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 transition-transform hover:scale-110"
             onClick={(e) => {
               e.stopPropagation();
               onToggleStar();
             }}
           >
-            <Star className={`h-4 w-4 ${note.starred ? 'fill-primary text-primary' : ''}`} />
+            <Star className={`h-4 w-4 transition-all ${note.starred ? 'fill-primary text-primary scale-110' : ''}`} />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -83,7 +85,7 @@ const NoteCard: React.FC<{
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-popover border border-border z-50">
               <DropdownMenuItem 
                 className="text-destructive"
                 onClick={(e) => {
@@ -115,7 +117,7 @@ const NoteCard: React.FC<{
       </div>
       
       {note.status === 'processing' && (
-        <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center">
+        <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
             <span className="text-sm">Processing...</span>
@@ -227,10 +229,11 @@ const Dashboard: React.FC = () => {
         <EmptyState onNewNote={() => setIsNewNoteOpen(true)} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredNotes.map((note) => (
+          {filteredNotes.map((note, index) => (
             <NoteCard
               key={note.id}
               note={note}
+              index={index}
               onOpen={() => navigate(`/note/${note.id}`)}
               onToggleStar={() => toggleStar(note.id)}
               onDelete={() => deleteNote(note.id)}
