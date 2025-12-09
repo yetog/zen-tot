@@ -15,6 +15,7 @@ interface NotesContextType {
   getNote: (id: string) => Note | undefined;
   toggleStar: (id: string) => void;
   searchNotes: (filters: NoteFilter) => Note[];
+  clearAllNotes: () => void;
   
   // Folders operations
   addFolder: (name: string) => Folder;
@@ -81,6 +82,11 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return notesService.searchNotes(filters);
   }, []);
 
+  const clearAllNotes = useCallback(() => {
+    localStorage.removeItem('zen-tot-notes');
+    setNotes([]);
+  }, []);
+
   const addFolder = useCallback((name: string) => {
     const folder = notesService.createFolder(name);
     setFolders(prev => [...prev, folder]);
@@ -118,6 +124,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         getNote,
         toggleStar,
         searchNotes,
+        clearAllNotes,
         addFolder,
         removeFolder,
         addTag,
