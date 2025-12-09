@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
-  Plus, 
+  Plus,
   Search, 
   Star, 
   SlidersHorizontal,
@@ -159,6 +159,15 @@ const Dashboard: React.FC = () => {
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const { notes, toggleStar, deleteNote, folders, tags } = useNotes();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read folder filter from URL on mount
+  useEffect(() => {
+    const folderFromUrl = searchParams.get('folder');
+    if (folderFromUrl) {
+      setFolderFilter(folderFromUrl);
+    }
+  }, [searchParams]);
 
   const filteredNotes = useMemo(() => {
     let result = [...notes];
@@ -202,6 +211,8 @@ const Dashboard: React.FC = () => {
     setTagFilter('all');
     setShowStarredOnly(false);
     setSearchQuery('');
+    // Clear folder from URL
+    setSearchParams({});
   };
 
   return (

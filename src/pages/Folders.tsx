@@ -100,8 +100,9 @@ const Folders: React.FC = () => {
               return (
                 <div
                   key={folder.id}
-                  className="group p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all hover-lift animate-fade-in"
+                  className="group p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all hover-lift animate-fade-in cursor-pointer"
                   style={{ animationDelay: `${index * 50}ms` }}
+                  onClick={() => navigate(`/?folder=${folder.id}`)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
@@ -116,7 +117,7 @@ const Folders: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">

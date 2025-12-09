@@ -11,6 +11,8 @@ import {
   Check,
   Volume2,
   VolumeX,
+  Search,
+  Target,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +24,7 @@ import {
   generateActionItems,
   generateFollowUpEmail,
   generateQuiz,
+  generateAnalysis,
 } from '@/services/noteAIService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -33,7 +36,7 @@ interface AITemplatesPanelProps {
   className?: string;
 }
 
-type TemplateType = 'summary' | 'minutes' | 'bullets' | 'actions' | 'email' | 'quiz';
+type TemplateType = 'summary' | 'minutes' | 'bullets' | 'actions' | 'email' | 'quiz' | 'analysis';
 
 interface Template {
   id: TemplateType;
@@ -44,10 +47,11 @@ interface Template {
 
 const templates: Template[] = [
   { id: 'summary', label: 'Brief Summary', icon: FileText, description: 'Concise 2-3 sentence overview' },
+  { id: 'analysis', label: 'Deep Analysis', icon: Search, description: 'In-depth content analysis' },
   { id: 'minutes', label: 'Meeting Minutes', icon: ClipboardList, description: 'Structured meeting notes' },
   { id: 'bullets', label: 'Bulleted Notes', icon: List, description: 'Key points as bullets' },
-  { id: 'actions', label: 'Action Items', icon: ListChecks, description: 'Extract tasks and to-dos' },
-  { id: 'email', label: 'Follow-up Email', icon: Mail, description: 'Draft a follow-up email' },
+  { id: 'actions', label: 'Create Execution Plan', icon: Target, description: 'Strategic plan based on analysis' },
+  { id: 'email', label: 'Draft Follow-up Email', icon: Mail, description: 'Email based on analysis' },
   { id: 'quiz', label: 'Quiz Questions', icon: HelpCircle, description: 'Test your knowledge' },
 ];
 
@@ -75,6 +79,9 @@ const AITemplatesPanel: React.FC<AITemplatesPanelProps> = ({
       switch (templateId) {
         case 'summary':
           result = await generateBriefSummary(noteContent);
+          break;
+        case 'analysis':
+          result = await generateAnalysis(noteContent);
           break;
         case 'minutes':
           result = await generateMeetingMinutes(noteContent);
