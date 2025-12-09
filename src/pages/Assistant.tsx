@@ -323,27 +323,27 @@ Be helpful, concise, and reference specific notes when relevant.`;
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center overflow-hidden">
-        {/* Avatar Section */}
-        <div className="w-full max-w-md h-64 md:h-80 relative flex items-center justify-center">
+        {/* Avatar Section - Compact */}
+        <div className="w-full max-w-md h-40 md:h-48 flex items-center justify-center shrink-0">
           <ZenAvatar2D 
             isSpeaking={isSpeaking} 
             isConnected={voiceConnected} 
           />
-          
-          {/* Agent Name & Status */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
-            <h2 className="text-2xl font-bold gradient-text">{AGENT_NAME}</h2>
-            <p className="text-sm text-muted-foreground">
-              {voiceConnected 
-                ? isSpeaking ? 'Speaking...' : 'Listening...' 
-                : 'Your Notes Consultant'}
-            </p>
-          </div>
+        </div>
+        
+        {/* Agent Name & Status - Outside avatar container */}
+        <div className="text-center shrink-0 -mt-2">
+          <h2 className="text-xl font-bold gradient-text">{AGENT_NAME}</h2>
+          <p className="text-sm text-muted-foreground">
+            {voiceConnected 
+              ? isSpeaking ? 'Speaking...' : 'Listening...' 
+              : 'Your Notes Consultant'}
+          </p>
         </div>
 
         {/* Chat/Transcript Area */}
-        <ScrollArea className="flex-1 w-full max-w-4xl px-4" ref={scrollRef}>
-          <div className="space-y-4 py-4">
+        <ScrollArea className="flex-1 w-full max-w-4xl px-4 mt-2" ref={scrollRef}>
+          <div className="space-y-3 py-2">
             {/* Show voice transcript when in voice mode */}
             {voiceMode && transcript.length > 0 ? (
               transcript.map((msg, idx) => (
@@ -406,52 +406,11 @@ Be helpful, concise, and reference specific notes when relevant.`;
                   )}
                 </div>
               ))
-            ) : !voiceMode ? (
-              <div className="text-center py-8 animate-fade-in">
-                <p className="text-muted-foreground mb-6">
-                  Ask {AGENT_NAME} anything about your notes, or start a voice conversation.
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="hover-glow"
-                    onClick={() => {
-                      playClick();
-                      setInput("What were my action items from last week?");
-                    }}
-                  >
-                    What were my action items?
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="hover-glow"
-                    onClick={() => {
-                      playClick();
-                      setInput("Summarize my recent notes");
-                    }}
-                  >
-                    Summarize notes
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="hover-glow"
-                    onClick={() => {
-                      playClick();
-                      setInput("What topics appear most?");
-                    }}
-                  >
-                    Find patterns
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground animate-fade-in">
+            ) : voiceMode ? (
+              <div className="text-center py-4 text-muted-foreground animate-fade-in">
                 <p>Speak to {AGENT_NAME}...</p>
               </div>
-            )}
+            ) : null}
             
             {isLoading && (
               <div className="flex gap-3 animate-fade-in">
@@ -465,6 +424,50 @@ Be helpful, concise, and reference specific notes when relevant.`;
             )}
           </div>
         </ScrollArea>
+
+        {/* Suggested Prompts - Always visible when no messages */}
+        {messages.length === 0 && !voiceMode && (
+          <div className="w-full max-w-4xl px-4 py-3 shrink-0 animate-fade-in">
+            <p className="text-sm text-muted-foreground text-center mb-3">
+              Ask {AGENT_NAME} anything about your notes
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hover-glow"
+                onClick={() => {
+                  playClick();
+                  setInput("What were my action items from last week?");
+                }}
+              >
+                What were my action items?
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hover-glow"
+                onClick={() => {
+                  playClick();
+                  setInput("Summarize my recent notes");
+                }}
+              >
+                Summarize notes
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hover-glow"
+                onClick={() => {
+                  playClick();
+                  setInput("What topics appear most?");
+                }}
+              >
+                Find patterns
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input Area */}
