@@ -196,7 +196,7 @@ const AITemplatesPanel: React.FC<AITemplatesPanelProps> = ({
               )}
             </div>
           </div>
-          <ScrollArea className="max-h-[300px]">
+          <ScrollArea className="h-[300px]">
             <div className="p-4">
               <p className="text-sm whitespace-pre-wrap">{generatedContent.content}</p>
             </div>

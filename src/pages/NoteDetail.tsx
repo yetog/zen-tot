@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Search, X, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Search, X, Volume2, VolumeX, Pencil, Save, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,11 @@ const NoteDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const { speak, stop, isPlaying, isLoading: isTTSLoading } = useTTS();
+  
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
   
   const note = id ? getNote(id) : undefined;
 
@@ -53,16 +59,57 @@ const NoteDetail: React.FC = () => {
 
   const handleSaveAIOutput = (type: string, content: string) => {
     const updates: Record<string, any> = {};
-    if (type === 'summary') {
-      updates.summary = content;
-    } else if (type === 'actions') {
-      updates.actionItems = content.split('\n').filter((item) => item.trim());
+    
+    switch (type) {
+      case 'summary':
+        updates.summary = content;
+        break;
+      case 'actions':
+        updates.actionItems = content.split('\n').filter((item) => item.trim());
+        break;
+      case 'bullets':
+        updates.bulletedNotes = content;
+        break;
+      case 'minutes':
+        updates.meetingMinutes = content;
+        break;
+      case 'email':
+        updates.followUpEmail = content;
+        break;
+      case 'quiz':
+        updates.quizContent = content;
+        break;
     }
     
     if (Object.keys(updates).length > 0) {
       updateNote(note.id, updates);
       toast.success('Saved to note');
     }
+  };
+
+  // Edit mode handlers
+  const handleStartEdit = () => {
+    setEditTitle(note.title);
+    setEditContent(note.transcript || note.extractedText || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const updates: Record<string, any> = { title: editTitle };
+    if (note.type === 'text') {
+      updates.extractedText = editContent;
+    } else {
+      updates.transcript = editContent;
+    }
+    updateNote(note.id, updates);
+    setIsEditing(false);
+    toast.success('Note updated');
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditTitle('');
+    setEditContent('');
   };
 
   const handleSaveChatInsight = (content: string) => {
@@ -254,7 +301,29 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
             {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
           </span>
         </div>
-        <h1 className="text-3xl font-bold">{note.title}</h1>
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="text-2xl font-bold h-12"
+              placeholder="Note title"
+            />
+            <Button size="icon" onClick={handleSaveEdit} className="shrink-0">
+              <Save className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={handleCancelEdit} className="shrink-0">
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">{note.title}</h1>
+            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="shrink-0">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
@@ -313,7 +382,14 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
             </div>
             <ScrollArea className="h-[300px]">
               <div className="p-4">
-                {noteContent ? (
+                {isEditing ? (
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[250px] text-sm"
+                    placeholder="Enter note content..."
+                  />
+                ) : noteContent ? (
                   <p 
                     className="text-sm text-muted-foreground whitespace-pre-wrap"
                     dangerouslySetInnerHTML={{ __html: highlightedContent }}
@@ -344,66 +420,102 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
               </div>
 
               <div className="p-4">
-                <TabsContent value="overview" className="m-0 space-y-4">
-                  {/* Summary */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Summary</h4>
-                      {note.summary && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => isPlaying ? stop() : speak(note.summary!)}
-                          disabled={isTTSLoading}
-                          className="h-7 text-xs"
-                        >
-                          {isPlaying ? <VolumeX className="h-3 w-3 mr-1" /> : <Volume2 className="h-3 w-3 mr-1" />}
-                          {isPlaying ? 'Stop' : 'Read'}
-                        </Button>
+                <TabsContent value="overview" className="m-0">
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-4 pr-4">
+                      {/* Summary */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">Summary</h4>
+                          {note.summary && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => isPlaying ? stop() : speak(note.summary!)}
+                              disabled={isTTSLoading}
+                              className="h-7 text-xs"
+                            >
+                              {isPlaying ? <VolumeX className="h-3 w-3 mr-1" /> : <Volume2 className="h-3 w-3 mr-1" />}
+                              {isPlaying ? 'Stop' : 'Read'}
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {note.summary || 'Generate a summary using AI Templates.'}
+                        </p>
+                      </div>
+
+                      {/* Action Items */}
+                      <div>
+                        <h4 className="font-medium mb-2">Action Items</h4>
+                        {note.actionItems && note.actionItems.length > 0 ? (
+                          <ul className="space-y-2">
+                            {note.actionItems.map((item, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm">
+                                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs shrink-0 mt-0.5">
+                                  {i + 1}
+                                </span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Extract action items using AI Templates.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Bulleted Notes */}
+                      {note.bulletedNotes && (
+                        <div>
+                          <h4 className="font-medium mb-2">Bulleted Notes</h4>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.bulletedNotes}</p>
+                        </div>
+                      )}
+
+                      {/* Meeting Minutes */}
+                      {note.meetingMinutes && (
+                        <div>
+                          <h4 className="font-medium mb-2">Meeting Minutes</h4>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.meetingMinutes}</p>
+                        </div>
+                      )}
+
+                      {/* Follow-up Email */}
+                      {note.followUpEmail && (
+                        <div>
+                          <h4 className="font-medium mb-2">Follow-up Email</h4>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.followUpEmail}</p>
+                        </div>
+                      )}
+
+                      {/* Quiz Content */}
+                      {note.quizContent && (
+                        <div>
+                          <h4 className="font-medium mb-2">Quiz Questions</h4>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.quizContent}</p>
+                        </div>
+                      )}
+
+                      {/* Chat Insights */}
+                      {note.chatInsights && note.chatInsights.length > 0 && (
+                        <div>
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <Lightbulb className="h-4 w-4 text-primary" />
+                            Saved Insights
+                          </h4>
+                          <div className="space-y-2">
+                            {note.chatInsights.map((insight, i) => (
+                              <div key={i} className="p-3 rounded-lg bg-muted text-sm">
+                                {insight}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {note.summary || 'Generate a summary using AI Templates.'}
-                    </p>
-                  </div>
-
-                  {/* Action Items */}
-                  <div>
-                    <h4 className="font-medium mb-2">Action Items</h4>
-                    {note.actionItems && note.actionItems.length > 0 ? (
-                      <ul className="space-y-2">
-                        {note.actionItems.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm">
-                            <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs shrink-0 mt-0.5">
-                              {i + 1}
-                            </span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Extract action items using AI Templates.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Chat Insights */}
-                  {note.chatInsights && note.chatInsights.length > 0 && (
-                    <div>
-                      <h4 className="font-medium mb-2 flex items-center gap-2">
-                        <Lightbulb className="h-4 w-4 text-primary" />
-                        Saved Insights
-                      </h4>
-                      <div className="space-y-2">
-                        {note.chatInsights.map((insight, i) => (
-                          <div key={i} className="p-3 rounded-lg bg-muted text-sm">
-                            {insight}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  </ScrollArea>
                 </TabsContent>
 
                 <TabsContent value="templates" className="m-0">
