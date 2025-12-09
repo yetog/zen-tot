@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import ReactMarkdown from 'react-markdown';
 import {
   generateBriefSummary,
   generateMeetingMinutes,
@@ -197,8 +198,21 @@ const AITemplatesPanel: React.FC<AITemplatesPanelProps> = ({
             </div>
           </div>
           <ScrollArea className="h-[300px]">
-            <div className="p-4">
-              <p className="text-sm whitespace-pre-wrap">{generatedContent.content}</p>
+            <div className="p-4 prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown
+                components={{
+                  strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+                  ul: ({ children }) => <ul className="list-disc pl-4 space-y-1">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-4 space-y-1">{children}</ol>,
+                  li: ({ children }) => <li className="text-sm">{children}</li>,
+                  p: ({ children }) => <p className="text-sm mb-2">{children}</p>,
+                  h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+                }}
+              >
+                {generatedContent.content}
+              </ReactMarkdown>
             </div>
           </ScrollArea>
         </div>
