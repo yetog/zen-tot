@@ -246,11 +246,24 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
   return (
     <div className="p-6 max-w-6xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={() => navigate('/')} className="transition-transform hover:scale-105">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+      <div className="p-4 mb-6 rounded-xl glass-strong">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={() => navigate('/')} className="transition-transform hover:scale-105 hover-glow">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center pulse-glow">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg line-clamp-1">{note.title}</h2>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
+                {currentFolder && ` • ${currentFolder.name}`}
+              </p>
+            </div>
+          </div>
         
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => toggleStar(note.id)} className="transition-transform hover:scale-110">
@@ -326,11 +339,12 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
               updateNote(note.id, { inKnowledgeBase: !note.inKnowledgeBase });
               toast.success(note.inKnowledgeBase ? 'Removed from Knowledge Base' : 'Added to Knowledge Base');
             }}
-            className="transition-transform hover:scale-105 gap-1"
+            className="transition-transform hover:scale-105 gap-1 hover-glow"
           >
             <Brain className="h-4 w-4" />
             {note.inKnowledgeBase ? 'In KB' : 'Save to KB'}
           </Button>
+        </div>
         </div>
       </div>
 

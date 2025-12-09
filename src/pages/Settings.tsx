@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ionosAI } from "@/services/ionosAI";
 import { useNotes } from "@/contexts/NotesContext";
 import { toast } from "sonner";
 import { 
@@ -62,13 +60,21 @@ export default function Settings() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">Configure your Zen TOT experience</p>
+      {/* Header */}
+      <div className="p-4 rounded-xl glass-strong">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center pulse-glow">
+            <SettingsIcon className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Settings</h1>
+            <p className="text-sm text-muted-foreground">Configure your Zen TOT experience</p>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 glass">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <SettingsIcon className="w-4 h-4" />
             General
@@ -89,7 +95,7 @@ export default function Settings() {
 
         {/* General Settings */}
         <TabsContent value="general" className="space-y-4">
-          <Card className="p-6 space-y-6">
+          <Card className="p-6 space-y-6 glass">
             <div>
               <h3 className="text-lg font-semibold mb-4">Appearance</h3>
               <div className="space-y-4">
@@ -120,7 +126,7 @@ export default function Settings() {
 
         {/* Voice Settings */}
         <TabsContent value="voice" className="space-y-4">
-          <Card className="p-6 space-y-6">
+          <Card className="p-6 space-y-6 glass">
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Mic className="w-5 h-5" />
@@ -163,7 +169,7 @@ export default function Settings() {
 
         {/* AI Settings */}
         <TabsContent value="ai" className="space-y-4">
-          <Card className="p-6 space-y-6">
+          <Card className="p-6 space-y-6 glass">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -214,7 +220,7 @@ export default function Settings() {
 
         {/* Data Management */}
         <TabsContent value="data" className="space-y-4">
-          <Card className="p-6 space-y-6">
+          <Card className="p-6 space-y-6 glass">
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Database className="w-5 h-5" />
@@ -233,7 +239,7 @@ export default function Settings() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button onClick={handleExportAll} variant="outline" className="flex-1">
+                  <Button onClick={handleExportAll} variant="outline" className="flex-1 hover-glow">
                     <Download className="h-4 w-4 mr-2" />
                     Export All Notes
                   </Button>

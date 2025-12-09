@@ -15,7 +15,8 @@ import {
   Trash2,
   FolderOpen,
   Hash,
-  X
+  X,
+  LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,7 +136,7 @@ const NoteCard: React.FC<{
 
 const EmptyState: React.FC<{ onNewNote: () => void }> = ({ onNewNote }) => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6 pulse-glow">
       <FileText className="h-10 w-10 text-primary" />
     </div>
     <h2 className="text-2xl font-semibold mb-2">Capture your first thought</h2>
@@ -143,7 +144,7 @@ const EmptyState: React.FC<{ onNewNote: () => void }> = ({ onNewNote }) => (
       Record audio, upload PDFs, paste YouTube links, or just type. 
       Zen TOT will transcribe, summarize, and help you find insights.
     </p>
-    <Button onClick={onNewNote} size="lg">
+    <Button onClick={onNewNote} size="lg" className="hover-glow">
       <Plus className="h-5 w-5 mr-2" />
       Create Note
     </Button>
@@ -218,18 +219,25 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">All Notes</h1>
-          <p className="text-muted-foreground">
-            {notes.length} {notes.length === 1 ? 'note' : 'notes'} captured
-          </p>
+      <div className="p-4 mb-6 rounded-xl glass-strong border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center pulse-glow">
+              <LayoutDashboard className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">All Notes</h1>
+              <p className="text-sm text-muted-foreground">
+                {notes.length} {notes.length === 1 ? 'note' : 'notes'} captured
+              </p>
+            </div>
+          </div>
+          
+          <Button onClick={() => setIsNewNoteOpen(true)} className="shrink-0 hover-glow">
+            <Plus className="h-5 w-5 mr-2" />
+            New Note
+          </Button>
         </div>
-        
-        <Button onClick={() => setIsNewNoteOpen(true)} className="shrink-0">
-          <Plus className="h-5 w-5 mr-2" />
-          New Note
-        </Button>
       </div>
 
       {/* Search & Filters */}
@@ -259,7 +267,7 @@ const Dashboard: React.FC = () => {
             {/* Type Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="shrink-0">
+                <Button variant="outline" className="shrink-0 hover-glow">
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   {typeFilter === 'all' ? 'Type' : typeFilter}
                 </Button>
@@ -284,7 +292,7 @@ const Dashboard: React.FC = () => {
             {/* Folder Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className={`shrink-0 ${folderFilter !== 'all' ? 'border-primary text-primary' : ''}`}>
+                <Button variant="outline" className={`shrink-0 hover-glow ${folderFilter !== 'all' ? 'border-primary text-primary' : ''}`}>
                   <FolderOpen className="h-4 w-4 mr-2" />
                   {folderFilter === 'all' ? 'Folder' : folders.find(f => f.id === folderFilter)?.name || 'Folder'}
                 </Button>
@@ -313,7 +321,7 @@ const Dashboard: React.FC = () => {
             {/* Tag Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className={`shrink-0 ${tagFilter !== 'all' ? 'border-primary text-primary' : ''}`}>
+                <Button variant="outline" className={`shrink-0 hover-glow ${tagFilter !== 'all' ? 'border-primary text-primary' : ''}`}>
                   <Hash className="h-4 w-4 mr-2" />
                   {tagFilter === 'all' ? 'Tag' : tagFilter}
                 </Button>
@@ -387,7 +395,7 @@ const Dashboard: React.FC = () => {
       {/* Floating Action Button (mobile) */}
       <Button
         onClick={() => setIsNewNoteOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg sm:hidden"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg sm:hidden hover-glow"
         size="icon"
       >
         <Plus className="h-6 w-6" />
