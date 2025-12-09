@@ -63,32 +63,39 @@ const Folders: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-fade-in">
-        <div>
-          <h1 className="text-3xl font-bold">Folders</h1>
-          <p className="text-muted-foreground">
-            Organize your notes into folders
-          </p>
+      <div className="p-4 mb-6 rounded-xl glass-strong animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center pulse-glow">
+              <FolderOpen className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Folders</h1>
+              <p className="text-sm text-muted-foreground">
+                Organize your notes into folders
+              </p>
+            </div>
+          </div>
+          
+          <Button onClick={() => setIsCreateOpen(true)} className="hover-glow">
+            <Plus className="h-5 w-5 mr-2" />
+            New Folder
+          </Button>
         </div>
-        
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-5 w-5 mr-2" />
-          New Folder
-        </Button>
       </div>
 
       {/* Folders Grid */}
       <div className="space-y-3">
         {folders.length === 0 ? (
           <div className="text-center py-16 animate-fade-in">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 pulse-glow">
               <FolderPlus className="h-10 w-10 text-primary" />
             </div>
             <h2 className="text-xl font-semibold mb-2">No folders yet</h2>
             <p className="text-muted-foreground mb-6">
               Create folders to organize your notes by topic, project, or category.
             </p>
-            <Button onClick={() => setIsCreateOpen(true)}>
+            <Button onClick={() => setIsCreateOpen(true)} className="hover-glow">
               <Plus className="h-4 w-4 mr-2" />
               Create First Folder
             </Button>
@@ -120,7 +127,7 @@ const Folders: React.FC = () => {
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity hover-glow">
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -213,7 +220,7 @@ const Folders: React.FC = () => {
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
+            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()} className="hover-glow">
               Create Folder
             </Button>
           </DialogFooter>
@@ -244,6 +251,7 @@ const Folders: React.FC = () => {
                 setIsEditOpen(false);
                 toast.success('Folder renamed');
               }}
+              className="hover-glow"
             >
               Save
             </Button>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useConversation } from '@11labs/react';
+import { toast } from 'sonner';
 
 interface TranscriptMessage {
   role: 'user' | 'agent';
@@ -11,15 +12,15 @@ interface VoiceAgentOptions {
   agentName?: string;
 }
 
+// Configuration - these should be set via environment or secrets
+// DO NOT hardcode API keys in production code
+const ELEVENLABS_AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || '';
+
 export const useVoiceAgent = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
-
-  // ElevenLabs configuration
-  const ELEVENLABS_AGENT_ID = 'agent_7701k7bfd4khebm8gp66aj0kpbsf';
-  const ELEVENLABS_API_KEY = 'sk_8e01678d62936838bc440a754e187457811e36b93613dca6';
 
   const conversation = useConversation({
     onConnect: () => {
@@ -64,37 +65,18 @@ export const useVoiceAgent = () => {
     }
   };
 
-  const getSignedUrl = async (): Promise<string> => {
-    if (!ELEVENLABS_API_KEY) {
-      throw new Error('ElevenLabs API key not configured.');
-    }
-
-    console.log('Fetching signed URL from ElevenLabs API...');
-    
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${ELEVENLABS_AGENT_ID}`,
-      {
-        method: 'GET',
-        headers: {
-          'xi-api-key': ELEVENLABS_API_KEY,
-        },
-      }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Failed to get signed URL from ElevenLabs:', errorData);
-      throw new Error(errorData.error || 'Failed to get signed URL from ElevenLabs');
-    }
-    
-    const data = await response.json();
-    console.log('Got signed URL successfully from ElevenLabs');
-    return data.signed_url;
-  };
-
   const start = useCallback(async (options?: VoiceAgentOptions) => {
     if (isConnected) {
       console.warn('Already connected');
+      return;
+    }
+
+    // Check if agent ID is configured
+    if (!ELEVENLABS_AGENT_ID) {
+      const errorMsg = 'ElevenLabs Agent ID not configured. Please set VITE_ELEVENLABS_AGENT_ID in your environment.';
+      console.error(errorMsg);
+      setError(errorMsg);
+      toast.error('Voice agent not configured. Please add your ElevenLabs Agent ID in settings.');
       return;
     }
 
@@ -105,9 +87,6 @@ export const useVoiceAgent = () => {
       // Request microphone permission
       const hasPermission = await requestMicrophonePermission();
       if (!hasPermission) return;
-
-      // Get signed URL
-      const signedUrl = await getSignedUrl();
 
       // Build context-aware system prompt
       const agentName = options?.agentName || 'Zen';
@@ -128,10 +107,10 @@ Be concise but helpful. Ask clarifying questions when needed.`;
         ? `Hi! I'm ${agentName}, your notes consultant. I've reviewed your notes and I'm ready to help you explore them. What would you like to know?`
         : `Hi! I'm ${agentName}. I'm here to help you with your notes. What can I assist you with today?`;
 
-      // Start ElevenLabs conversation with context overrides
-      console.log('Starting ElevenLabs conversation with notes context...');
+      // Start ElevenLabs conversation with public agent (no API key needed for public agents)
+      console.log('Starting ElevenLabs conversation...');
       await conversation.startSession({ 
-        signedUrl,
+        agentId: ELEVENLABS_AGENT_ID,
         overrides: {
           agent: {
             prompt: {
@@ -145,7 +124,9 @@ Be concise but helpful. Ask clarifying questions when needed.`;
       
     } catch (err) {
       console.error('Failed to start voice agent:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start voice conversation');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start voice conversation';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   }, [isConnected, conversation]);
 
@@ -161,6 +142,9 @@ Be concise but helpful. Ask clarifying questions when needed.`;
     setTranscript([]);
   }, []);
 
+  // Check if voice agent is properly configured
+  const isConfigured = Boolean(ELEVENLABS_AGENT_ID);
+
   return {
     start,
     stop,
@@ -169,6 +153,7 @@ Be concise but helpful. Ask clarifying questions when needed.`;
     isSpeaking,
     error,
     transcript,
-    status: conversation.status
+    status: conversation.status,
+    isConfigured
   };
 };

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   Select, 
   SelectContent, 
@@ -17,7 +18,9 @@ import {
   ZoomIn, 
   ZoomOut, 
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Search,
+  X
 } from 'lucide-react';
 import { NoteType } from '@/types/note';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -33,6 +36,7 @@ interface GraphNode extends d3.SimulationNodeDatum {
   isFolder?: boolean;
   folderId?: string;
   starred?: boolean;
+  isHighlighted?: boolean;
 }
 
 interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
@@ -60,6 +64,7 @@ const KnowledgeGraph: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
+  const nodesRef = useRef<GraphNode[]>([]);
   const { playClick, playWhoosh, playHover } = useSoundEffects();
   
   const [filterType, setFilterType] = useState<string>('all');
@@ -69,6 +74,7 @@ const KnowledgeGraph: React.FC = () => {
   const [showSimilarity, setShowSimilarity] = useState(true);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Build graph data
   const graphData = useMemo(() => {
@@ -86,8 +92,12 @@ const KnowledgeGraph: React.FC = () => {
       filteredNotes = filteredNotes.filter(n => n.folderId === filterFolder);
     }
 
+    const searchLower = searchQuery.toLowerCase();
+
     filteredNotes.forEach(note => {
       const contentLength = (note.transcript?.length || 0) + (note.extractedText?.length || 0);
+      const isHighlighted = searchQuery ? note.title.toLowerCase().includes(searchLower) : false;
+      
       nodes.push({
         id: note.id,
         name: note.title,
@@ -96,11 +106,13 @@ const KnowledgeGraph: React.FC = () => {
         color: typeColors[note.type] || '#6366F1',
         folderId: note.folderId,
         starred: note.starred,
+        isHighlighted,
       });
 
       if (showTags && note.tags) {
         note.tags.forEach(tagName => {
           const tagId = `tag-${tagName}`;
+          const tagHighlighted = searchQuery ? tagName.toLowerCase().includes(searchLower) : false;
           if (!tagNodeIds.has(tagId)) {
             tagNodeIds.add(tagId);
             nodes.push({
@@ -110,6 +122,7 @@ const KnowledgeGraph: React.FC = () => {
               val: 8,
               color: typeColors.tag,
               isTag: true,
+              isHighlighted: tagHighlighted,
             });
           }
           links.push({
@@ -125,6 +138,7 @@ const KnowledgeGraph: React.FC = () => {
         const folder = folders.find(f => f.id === note.folderId);
         if (folder) {
           const folderId = `folder-${note.folderId}`;
+          const folderHighlighted = searchQuery ? folder.name.toLowerCase().includes(searchLower) : false;
           if (!folderNodeIds.has(folderId)) {
             folderNodeIds.add(folderId);
             nodes.push({
@@ -134,6 +148,7 @@ const KnowledgeGraph: React.FC = () => {
               val: 12,
               color: typeColors.folder,
               isFolder: true,
+              isHighlighted: folderHighlighted,
             });
           }
           links.push({
@@ -165,7 +180,13 @@ const KnowledgeGraph: React.FC = () => {
     });
 
     return { nodes, links };
-  }, [notes, folders, filterType, filterFolder, showTags, showFolders, showSimilarity]);
+  }, [notes, folders, filterType, filterFolder, showTags, showFolders, showSimilarity, searchQuery]);
+
+  // Search results count
+  const searchResultCount = useMemo(() => {
+    if (!searchQuery) return 0;
+    return graphData.nodes.filter(n => n.isHighlighted).length;
+  }, [graphData.nodes, searchQuery]);
 
   // Handle resize
   useEffect(() => {
@@ -194,6 +215,7 @@ const KnowledgeGraph: React.FC = () => {
 
     const nodes = graphData.nodes.map(d => ({ ...d }));
     const links = graphData.links.map(d => ({ ...d }));
+    nodesRef.current = nodes;
 
     // Create simulation
     const simulation = d3.forceSimulation<GraphNode>(nodes)
@@ -214,6 +236,8 @@ const KnowledgeGraph: React.FC = () => {
       
       ctx.translate(transformRef.current.x, transformRef.current.y);
       ctx.scale(transformRef.current.k, transformRef.current.k);
+
+      const zoomLevel = transformRef.current.k;
 
       // Draw links
       links.forEach(link => {
@@ -252,6 +276,20 @@ const KnowledgeGraph: React.FC = () => {
         
         const size = node.val || 5;
         const color = node.color || '#6366F1';
+        const isHighlighted = node.isHighlighted;
+
+        // Highlighted glow for search results
+        if (isHighlighted) {
+          const highlightGradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 3.5);
+          highlightGradient.addColorStop(0, '#FFD700');
+          highlightGradient.addColorStop(0.3, '#FFD70080');
+          highlightGradient.addColorStop(1, 'transparent');
+          
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, size * 3.5, 0, 2 * Math.PI);
+          ctx.fillStyle = highlightGradient;
+          ctx.fill();
+        }
 
         // Glow effect
         const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 2);
@@ -284,6 +322,25 @@ const KnowledgeGraph: React.FC = () => {
         ctx.arc(node.x - size * 0.3, node.y - size * 0.3, size * 0.3, 0, 2 * Math.PI);
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
         ctx.fill();
+
+        // Draw labels when zoomed in or highlighted
+        if (zoomLevel > 0.7 || isHighlighted) {
+          const label = node.name.length > 20 ? node.name.slice(0, 18) + '...' : node.name;
+          const fontSize = Math.max(10, 12 / zoomLevel);
+          ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          
+          // Label background
+          const textWidth = ctx.measureText(label).width;
+          const labelY = node.y + size + 6;
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.8)';
+          ctx.fillRect(node.x - textWidth / 2 - 4, labelY - 2, textWidth + 8, fontSize + 4);
+          
+          // Label text
+          ctx.fillStyle = isHighlighted ? '#FFD700' : '#E5E5E5';
+          ctx.fillText(label, node.x, labelY);
+        }
       });
 
       ctx.restore();
@@ -448,6 +505,30 @@ const KnowledgeGraph: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search nodes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-20 w-56 glass"
+              />
+              {searchQuery && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">{searchResultCount} found</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {/* Filters */}
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
