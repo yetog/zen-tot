@@ -12,9 +12,8 @@ interface VoiceAgentOptions {
   agentName?: string;
 }
 
-// Configuration - these should be set via environment or secrets
-// DO NOT hardcode API keys in production code
-const ELEVENLABS_AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || '';
+// ElevenLabs Agent ID - can be overridden via environment variable
+const ELEVENLABS_AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID || 'agent_8501kc0nnd9ve7rbs8h8b0p3g8mp';
 
 export const useVoiceAgent = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -91,13 +90,32 @@ export const useVoiceAgent = () => {
       if (!hasPermission) return;
 
       // Start ElevenLabs conversation with public agent ID
-      // Note: For public agents, we use agentId directly
-      // Overrides should be configured in the ElevenLabs dashboard
       console.log('Starting ElevenLabs conversation with agent:', ELEVENLABS_AGENT_ID);
       
-      await conversation.startSession({
+      // Build session config with optional notes context override
+      const sessionConfig: any = {
         agentId: ELEVENLABS_AGENT_ID
-      } as any); // Type assertion needed due to SDK type definitions
+      };
+
+      // If notes context is provided, inject it into the agent's prompt
+      if (options?.notesContext) {
+        console.log('Injecting notes context into voice agent');
+        sessionConfig.overrides = {
+          agent: {
+            prompt: {
+              prompt: `You are Zen, an intelligent AI assistant for the Zen TOT note-taking app. You help users understand and work with their notes.
+
+Here is context from the user's notes:
+
+${options.notesContext}
+
+Use this context to answer questions accurately. Reference specific notes when relevant. If the answer isn't in the notes, say so clearly. Be helpful and conversational.`
+            }
+          }
+        };
+      }
+      
+      await conversation.startSession(sessionConfig);
       
     } catch (err) {
       console.error('Failed to start voice agent:', err);
