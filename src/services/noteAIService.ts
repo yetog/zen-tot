@@ -119,8 +119,21 @@ async function generateFromTemplate(
   }
 
   try {
-    const prompt = TEMPLATE_PROMPTS[templateName].replace('{content}', content);
-    const response = await ionosAI.sendMessage([{ role: 'user', content: prompt }]);
+    // Create explicit prompt with clear content boundaries
+    const userContent = `${TEMPLATE_PROMPTS[templateName]}
+
+---BEGIN CONTENT---
+${content}
+---END CONTENT---
+
+Based on the content above, provide the requested output. Do NOT say there is no content - the content is provided between the BEGIN and END markers above.`;
+
+    const response = await ionosAI.sendMessage([
+      { 
+        role: 'user', 
+        content: userContent
+      }
+    ]);
 
     if (response && response.length > 0) {
       return {
