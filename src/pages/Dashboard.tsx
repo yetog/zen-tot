@@ -12,7 +12,10 @@ import {
   Globe,
   File,
   MoreVertical,
-  Trash2
+  Trash2,
+  FolderOpen,
+  Hash,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +24,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Toggle } from '@/components/ui/toggle';
 import { useNotes } from '@/contexts/NotesContext';
 import { NewNoteModal } from '@/components/NewNoteModal';
 import { Note, NoteType } from '@/types/note';
@@ -149,7 +154,10 @@ const Dashboard: React.FC = () => {
   const [isNewNoteOpen, setIsNewNoteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<NoteType | 'all'>('all');
-  const { notes, toggleStar, deleteNote } = useNotes();
+  const [folderFilter, setFolderFilter] = useState<string | 'all'>('all');
+  const [tagFilter, setTagFilter] = useState<string | 'all'>('all');
+  const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const { notes, toggleStar, deleteNote, folders, tags } = useNotes();
   const navigate = useNavigate();
 
   const filteredNotes = useMemo(() => {
@@ -158,6 +166,18 @@ const Dashboard: React.FC = () => {
     if (typeFilter !== 'all') {
       result = result.filter(n => n.type === typeFilter);
     }
+
+    if (folderFilter !== 'all') {
+      result = result.filter(n => n.folderId === folderFilter);
+    }
+
+    if (tagFilter !== 'all') {
+      result = result.filter(n => n.tags?.includes(tagFilter));
+    }
+
+    if (showStarredOnly) {
+      result = result.filter(n => n.starred);
+    }
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -165,12 +185,24 @@ const Dashboard: React.FC = () => {
         n.title.toLowerCase().includes(query) ||
         n.transcript?.toLowerCase().includes(query) ||
         n.extractedText?.toLowerCase().includes(query) ||
-        n.summary?.toLowerCase().includes(query)
+        n.summary?.toLowerCase().includes(query) ||
+        n.chatInsights?.some(insight => insight.toLowerCase().includes(query)) ||
+        n.actionItems?.some(item => item.toLowerCase().includes(query))
       );
     }
     
     return result;
-  }, [notes, typeFilter, searchQuery]);
+  }, [notes, typeFilter, folderFilter, tagFilter, showStarredOnly, searchQuery]);
+
+  const hasActiveFilters = typeFilter !== 'all' || folderFilter !== 'all' || tagFilter !== 'all' || showStarredOnly;
+
+  const clearFilters = () => {
+    setTypeFilter('all');
+    setFolderFilter('all');
+    setTagFilter('all');
+    setShowStarredOnly(false);
+    setSearchQuery('');
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -190,38 +222,137 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search notes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="shrink-0">
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              {typeFilter === 'all' ? 'All Types' : typeFilter}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setTypeFilter('all')}>
-              All Types
-            </DropdownMenuItem>
-            {Object.keys(typeIcons).map((type) => (
-              <DropdownMenuItem 
-                key={type} 
-                onClick={() => setTypeFilter(type as NoteType)}
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search notes, transcripts, insights..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery('')}
               >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {/* Type Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="shrink-0">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  {typeFilter === 'all' ? 'Type' : typeFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTypeFilter('all')}>
+                  All Types
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {Object.keys(typeIcons).map((type) => (
+                  <DropdownMenuItem 
+                    key={type} 
+                    onClick={() => setTypeFilter(type as NoteType)}
+                    className={typeFilter === type ? 'bg-primary/10' : ''}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Folder Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className={`shrink-0 ${folderFilter !== 'all' ? 'border-primary text-primary' : ''}`}>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  {folderFilter === 'all' ? 'Folder' : folders.find(f => f.id === folderFilter)?.name || 'Folder'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setFolderFilter('all')}>
+                  All Folders
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {folders.map((folder) => (
+                  <DropdownMenuItem 
+                    key={folder.id} 
+                    onClick={() => setFolderFilter(folder.id)}
+                    className={folderFilter === folder.id ? 'bg-primary/10' : ''}
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {folder.name}
+                  </DropdownMenuItem>
+                ))}
+                {folders.length === 0 && (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">No folders</div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Tag Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className={`shrink-0 ${tagFilter !== 'all' ? 'border-primary text-primary' : ''}`}>
+                  <Hash className="h-4 w-4 mr-2" />
+                  {tagFilter === 'all' ? 'Tag' : tagFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTagFilter('all')}>
+                  All Tags
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {tags.map((tag) => (
+                  <DropdownMenuItem 
+                    key={tag.id} 
+                    onClick={() => setTagFilter(tag.name)}
+                    className={tagFilter === tag.name ? 'bg-primary/10' : ''}
+                  >
+                    <Hash className="h-4 w-4 mr-2" />
+                    {tag.name}
+                  </DropdownMenuItem>
+                ))}
+                {tags.length === 0 && (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">No tags</div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Starred Toggle */}
+            <Toggle
+              pressed={showStarredOnly}
+              onPressedChange={setShowStarredOnly}
+              className={`shrink-0 ${showStarredOnly ? 'bg-primary/10 border-primary text-primary' : ''}`}
+              aria-label="Show starred only"
+            >
+              <Star className={`h-4 w-4 mr-2 ${showStarredOnly ? 'fill-primary' : ''}`} />
+              Starred
+            </Toggle>
+          </div>
+        </div>
+
+        {/* Active Filters Indicator */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {filteredNotes.length} {filteredNotes.length === 1 ? 'result' : 'results'}
+            </span>
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
+              <X className="h-3 w-3 mr-1" />
+              Clear filters
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Notes Grid or Empty State */}
