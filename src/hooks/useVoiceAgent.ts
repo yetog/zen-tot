@@ -92,28 +92,34 @@ export const useVoiceAgent = () => {
       // Start ElevenLabs conversation with public agent ID
       console.log('Starting ElevenLabs conversation with agent:', ELEVENLABS_AGENT_ID);
       
-      // Build session config with optional notes context override
-      const sessionConfig: any = {
-        agentId: ELEVENLABS_AGENT_ID
-      };
+      // Debug: Log context info
+      console.log('Notes context provided:', options?.notesContext !== undefined);
+      console.log('Notes context length:', options?.notesContext?.length || 0);
+      console.log('Notes context preview:', options?.notesContext?.slice(0, 300) || '(empty)');
+      
+      // Build session config - ALWAYS include overrides to ensure custom prompt
+      const hasNotes = options?.notesContext && options.notesContext.trim().length > 0;
+      
+      const notesSection = hasNotes
+        ? `Here is context from the user's notes:\n\n${options.notesContext}`
+        : "The user has no notes yet. Let them know you can help them organize and understand their notes once they add some content to the app.";
 
-      // If notes context is provided, inject it into the agent's prompt
-      if (options?.notesContext) {
-        console.log('Injecting notes context into voice agent');
-        sessionConfig.overrides = {
+      const sessionConfig: any = {
+        agentId: ELEVENLABS_AGENT_ID,
+        overrides: {
           agent: {
             prompt: {
               prompt: `You are Zen, an intelligent AI assistant for the Zen TOT note-taking app. You help users understand and work with their notes.
 
-Here is context from the user's notes:
-
-${options.notesContext}
+${notesSection}
 
 Use this context to answer questions accurately. Reference specific notes when relevant. If the answer isn't in the notes, say so clearly. Be helpful and conversational.`
             }
           }
-        };
-      }
+        }
+      };
+
+      console.log('Session config overrides applied:', !!sessionConfig.overrides);
       
       await conversation.startSession(sessionConfig);
       
