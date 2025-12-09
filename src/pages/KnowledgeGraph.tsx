@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import ForceGraph3D from 'react-force-graph-3d';
+import ForceGraph2D from 'react-force-graph-2d';
 import { useNavigate } from 'react-router-dom';
 import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { 
   Select, 
   SelectContent, 
@@ -18,18 +17,11 @@ import {
   ZoomIn, 
   ZoomOut, 
   RotateCcw,
-  Mic,
-  FileText,
-  Youtube,
-  Globe,
-  Image,
-  Type,
   Sparkles
 } from 'lucide-react';
 import { NoteType } from '@/types/note';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { findSimilarNotes } from '@/services/embeddingService';
-import * as THREE from 'three';
 
 interface GraphNode {
   id: string;
@@ -41,6 +33,8 @@ interface GraphNode {
   isFolder?: boolean;
   folderId?: string;
   starred?: boolean;
+  x?: number;
+  y?: number;
 }
 
 interface GraphLink {
@@ -73,7 +67,6 @@ const KnowledgeGraph: React.FC = () => {
   const [showTags, setShowTags] = useState(true);
   const [showFolders, setShowFolders] = useState(true);
   const [showSimilarity, setShowSimilarity] = useState(true);
-  const [linkDistance, setLinkDistance] = useState([100]);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
@@ -198,54 +191,70 @@ const KnowledgeGraph: React.FC = () => {
   const handleNodeClick = useCallback((node: any) => {
     playClick();
     if (node.isTag || node.isFolder) return;
-    
-    // Zoom to node then navigate
-    if (graphRef.current) {
-      const distance = 100;
-      const distRatio = 1 + distance / Math.hypot(node.x || 0, node.y || 0, node.z || 0);
-      graphRef.current.cameraPosition(
-        { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
-        node,
-        1000
-      );
-      setTimeout(() => navigate(`/note/${node.id}`), 1000);
-    } else {
-      navigate(`/note/${node.id}`);
-    }
+    navigate(`/note/${node.id}`);
   }, [navigate, playClick]);
 
   const handleZoomIn = () => {
     playClick();
     if (graphRef.current) {
-      const currentPos = graphRef.current.cameraPosition();
-      graphRef.current.cameraPosition(
-        { x: currentPos.x * 0.7, y: currentPos.y * 0.7, z: currentPos.z * 0.7 },
-        null,
-        500
-      );
+      graphRef.current.zoom(graphRef.current.zoom() * 1.5, 500);
     }
   };
 
   const handleZoomOut = () => {
     playClick();
     if (graphRef.current) {
-      const currentPos = graphRef.current.cameraPosition();
-      graphRef.current.cameraPosition(
-        { x: currentPos.x * 1.5, y: currentPos.y * 1.5, z: currentPos.z * 1.5 },
-        null,
-        500
-      );
+      graphRef.current.zoom(graphRef.current.zoom() / 1.5, 500);
     }
   };
 
   const handleReset = () => {
     playWhoosh();
     if (graphRef.current) {
-      graphRef.current.cameraPosition({ x: 0, y: 0, z: 500 }, { x: 0, y: 0, z: 0 }, 1000);
+      graphRef.current.centerAt(0, 0, 1000);
+      graphRef.current.zoom(1, 1000);
     }
   };
 
   const noteTypes = ['all', 'audio', 'pdf', 'youtube', 'text', 'web', 'image'];
+
+  // Custom node rendering
+  const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
+    const size = node.val || 5;
+    const color = node.color || '#6366F1';
+    
+    // Draw glow effect
+    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 2);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.5, `${color}40`);
+    gradient.addColorStop(1, 'transparent');
+    
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, size * 2, 0, 2 * Math.PI);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Draw main node
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    
+    // Add highlight for starred nodes
+    if (node.starred) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, size + 3, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // Draw inner highlight
+    ctx.beginPath();
+    ctx.arc(node.x - size * 0.3, node.y - size * 0.3, size * 0.3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fill();
+  }, []);
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-background">
@@ -259,7 +268,7 @@ const KnowledgeGraph: React.FC = () => {
             <div>
               <h1 className="font-semibold flex items-center gap-2">
                 Knowledge Graph 
-                <Badge variant="outline" className="text-xs animate-pulse">3D</Badge>
+                <Badge variant="outline" className="text-xs">2D</Badge>
               </h1>
               <p className="text-sm text-muted-foreground">
                 Visualize connections between {graphData.nodes.filter(n => !n.isTag && !n.isFolder).length} notes
@@ -362,28 +371,25 @@ const KnowledgeGraph: React.FC = () => {
             </p>
           </div>
         ) : (
-          <ForceGraph3D
+          <ForceGraph2D
             ref={graphRef}
             graphData={graphData}
             width={dimensions.width}
             height={dimensions.height}
-            backgroundColor="rgba(0,0,0,0)"
-            nodeLabel={(node: any) => `
-              <div style="background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.3);">
-                <strong>${node.name}</strong><br/>
-                <small style="color: #a1a1aa;">${node.type}</small>
-              </div>
-            `}
-            nodeColor={(node: any) => node.color}
-            nodeVal={(node: any) => node.val}
-            nodeOpacity={0.9}
+            backgroundColor="transparent"
+            nodeCanvasObject={paintNode}
+            nodePointerAreaPaint={(node: any, color, ctx) => {
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, node.val || 5, 0, 2 * Math.PI);
+              ctx.fillStyle = color;
+              ctx.fill();
+            }}
             linkColor={(link: any) => 
               link.type === 'similarity' ? 'rgba(139,92,246,0.4)' :
               link.type === 'folder' ? 'rgba(249,115,22,0.4)' : 
               'rgba(6,182,212,0.3)'
             }
             linkWidth={(link: any) => link.value}
-            linkOpacity={0.6}
             linkDirectionalParticles={2}
             linkDirectionalParticleSpeed={0.005}
             linkDirectionalParticleWidth={2}
@@ -399,33 +405,9 @@ const KnowledgeGraph: React.FC = () => {
               }
               setHoveredNode(node as GraphNode | null);
             }}
-            nodeThreeObject={(node: any) => {
-              // Create glowing sphere for nodes
-              const sphereGeometry = new THREE.SphereGeometry(node.val || 5, 32, 32);
-              const sphereMaterial = new THREE.MeshBasicMaterial({
-                color: node.color,
-                transparent: true,
-                opacity: 0.85,
-              });
-              const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-              
-              // Add glow effect for starred nodes
-              if (node.starred) {
-                const glowGeometry = new THREE.SphereGeometry((node.val || 5) * 1.3, 32, 32);
-                const glowMaterial = new THREE.MeshBasicMaterial({
-                  color: '#FFD700',
-                  transparent: true,
-                  opacity: 0.3,
-                });
-                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-                sphere.add(glow);
-              }
-              
-              return sphere;
-            }}
             enableNodeDrag={true}
-            enableNavigationControls={true}
-            showNavInfo={false}
+            enableZoomInteraction={true}
+            enablePanInteraction={true}
           />
         )}
 
@@ -483,17 +465,14 @@ const KnowledgeGraph: React.FC = () => {
               <div className="flex items-center gap-2 text-xs mt-1">
                 <div 
                   className="w-8 h-0.5 rounded" 
-                  style={{ backgroundColor: '#8B5CF6' }}
+                  style={{ 
+                    background: 'linear-gradient(90deg, #8B5CF6, transparent)',
+                  }}
                 />
-                <span>Similar</span>
+                <span>Similarity</span>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Controls hint */}
-        <div className="absolute bottom-4 right-4 p-3 glass rounded-lg text-xs text-muted-foreground">
-          <p>🖱️ Drag to rotate • Scroll to zoom • Click node to view</p>
         </div>
       </div>
     </div>
