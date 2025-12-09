@@ -9,6 +9,8 @@ import {
   Loader2,
   Copy,
   Check,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +24,7 @@ import {
 } from '@/services/noteAIService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTTS } from '@/hooks/useTTS';
 
 interface AITemplatesPanelProps {
   noteContent: string;
@@ -55,6 +58,7 @@ const AITemplatesPanel: React.FC<AITemplatesPanelProps> = ({
   const [loading, setLoading] = useState<TemplateType | null>(null);
   const [generatedContent, setGeneratedContent] = useState<{ type: TemplateType; content: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const { speak, stop, isPlaying, isLoading: isTTSLoading } = useTTS();
 
   const generateTemplate = async (templateId: TemplateType) => {
     if (!noteContent) {
@@ -117,6 +121,14 @@ const AITemplatesPanel: React.FC<AITemplatesPanelProps> = ({
     }
   };
 
+  const handleReadAloud = () => {
+    if (isPlaying) {
+      stop();
+    } else if (generatedContent?.content) {
+      speak(generatedContent.content);
+    }
+  };
+
   const getTemplateName = (type: TemplateType): string => {
     return templates.find((t) => t.id === type)?.label || type;
   };
@@ -165,6 +177,15 @@ const AITemplatesPanel: React.FC<AITemplatesPanelProps> = ({
               {getTemplateName(generatedContent.type)}
             </h4>
             <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleReadAloud}
+                disabled={isTTSLoading}
+                title={isPlaying ? 'Stop reading' : 'Read aloud'}
+              >
+                {isPlaying ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>

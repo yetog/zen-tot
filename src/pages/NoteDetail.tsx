@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Plus } from 'lucide-react';
+import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Search, X, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +19,15 @@ import SourcePreview from '@/components/SourcePreview';
 import AITemplatesPanel from '@/components/AITemplatesPanel';
 import NoteChat from '@/components/NoteChat';
 import { toast } from 'sonner';
+import { useTTS } from '@/hooks/useTTS';
 
 const NoteDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getNote, toggleStar, deleteNote, updateNote, folders, tags } = useNotes();
   const [activeTab, setActiveTab] = useState('overview');
+  const [transcriptSearch, setTranscriptSearch] = useState('');
+  const { speak, stop, isPlaying, isLoading: isTTSLoading } = useTTS();
   
   const note = id ? getNote(id) : undefined;
 
@@ -115,6 +119,35 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
 
   const noteContent = note.transcript || note.extractedText || '';
   const currentFolder = folders.find(f => f.id === note.folderId);
+
+  // Searchable transcript with highlighting
+  const { highlightedContent, matchCount } = useMemo(() => {
+    if (!transcriptSearch || !noteContent) {
+      return { highlightedContent: noteContent, matchCount: 0 };
+    }
+    
+    const regex = new RegExp(`(${transcriptSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const matches = noteContent.match(regex);
+    const highlighted = noteContent.replace(regex, '<mark class="bg-primary/30 text-foreground rounded px-0.5">$1</mark>');
+    
+    return { 
+      highlightedContent: highlighted, 
+      matchCount: matches?.length || 0 
+    };
+  }, [noteContent, transcriptSearch]);
+
+  const handleReadAloud = () => {
+    if (isPlaying) {
+      stop();
+    } else {
+      const textToRead = note.summary || noteContent;
+      if (textToRead) {
+        speak(textToRead);
+      } else {
+        toast.error('No content to read');
+      }
+    }
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto animate-fade-in">
@@ -231,15 +264,60 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
           <SourcePreview note={note} />
 
           <div className="rounded-xl bg-card border border-border overflow-hidden">
-            <div className="p-4 border-b border-border">
-              <h3 className="font-semibold">Transcript / Content</h3>
+            <div className="p-4 border-b border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Transcript / Content</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReadAloud}
+                  disabled={isTTSLoading || !noteContent}
+                  className="h-8"
+                >
+                  {isPlaying ? (
+                    <>
+                      <VolumeX className="h-4 w-4 mr-1" />
+                      Stop
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="h-4 w-4 mr-1" />
+                      {isTTSLoading ? 'Loading...' : 'Read Aloud'}
+                    </>
+                  )}
+                </Button>
+              </div>
+              {/* Search within transcript */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search in transcript..."
+                  value={transcriptSearch}
+                  onChange={(e) => setTranscriptSearch(e.target.value)}
+                  className="pl-9 pr-16 h-9"
+                />
+                {transcriptSearch && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">{matchCount} found</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setTranscriptSearch('')}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             <ScrollArea className="h-[300px]">
               <div className="p-4">
                 {noteContent ? (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {noteContent}
-                  </p>
+                  <p 
+                    className="text-sm text-muted-foreground whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: highlightedContent }}
+                  />
                 ) : (
                   <p className="text-sm text-muted-foreground italic">
                     No content extracted yet. 
@@ -269,7 +347,21 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
                 <TabsContent value="overview" className="m-0 space-y-4">
                   {/* Summary */}
                   <div>
-                    <h4 className="font-medium mb-2">Summary</h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Summary</h4>
+                      {note.summary && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => isPlaying ? stop() : speak(note.summary!)}
+                          disabled={isTTSLoading}
+                          className="h-7 text-xs"
+                        >
+                          {isPlaying ? <VolumeX className="h-3 w-3 mr-1" /> : <Volume2 className="h-3 w-3 mr-1" />}
+                          {isPlaying ? 'Stop' : 'Read'}
+                        </Button>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {note.summary || 'Generate a summary using AI Templates.'}
                     </p>
