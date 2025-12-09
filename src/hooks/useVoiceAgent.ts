@@ -6,6 +6,11 @@ interface TranscriptMessage {
   text: string;
 }
 
+interface VoiceAgentOptions {
+  notesContext?: string;
+  agentName?: string;
+}
+
 export const useVoiceAgent = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -61,7 +66,7 @@ export const useVoiceAgent = () => {
 
   const getSignedUrl = async (): Promise<string> => {
     if (!ELEVENLABS_API_KEY) {
-      throw new Error('ElevenLabs API key not configured. Please add VITE_ELEVENLABS_API_KEY to your environment.');
+      throw new Error('ElevenLabs API key not configured.');
     }
 
     console.log('Fetching signed URL from ElevenLabs API...');
@@ -87,7 +92,7 @@ export const useVoiceAgent = () => {
     return data.signed_url;
   };
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (options?: VoiceAgentOptions) => {
     if (isConnected) {
       console.warn('Already connected');
       return;
@@ -95,18 +100,48 @@ export const useVoiceAgent = () => {
 
     try {
       setError(null);
-      console.log('Starting voice agent...');
+      console.log('Starting voice agent with context...');
 
       // Request microphone permission
       const hasPermission = await requestMicrophonePermission();
       if (!hasPermission) return;
 
-      // Get signed URL from edge function
+      // Get signed URL
       const signedUrl = await getSignedUrl();
 
-      // Start ElevenLabs conversation
-      console.log('Starting ElevenLabs conversation...');
-      await conversation.startSession({ signedUrl });
+      // Build context-aware system prompt
+      const agentName = options?.agentName || 'Zen';
+      const notesContext = options?.notesContext || '';
+      
+      const systemPrompt = `You are ${agentName}, a friendly and insightful AI consultant for the Zen TOT app. 
+You help users understand and work with their notes, find patterns, and extract insights.
+You have a warm, encouraging personality and speak in a clear, helpful manner.
+
+${notesContext ? `Here is context from the user's notes that you can reference:
+${notesContext}
+
+Use this context to provide personalized, relevant responses. Reference specific notes when helpful.` : 'The user has not loaded any notes yet.'}
+
+Be concise but helpful. Ask clarifying questions when needed.`;
+
+      const firstMessage = notesContext 
+        ? `Hi! I'm ${agentName}, your notes consultant. I've reviewed your notes and I'm ready to help you explore them. What would you like to know?`
+        : `Hi! I'm ${agentName}. I'm here to help you with your notes. What can I assist you with today?`;
+
+      // Start ElevenLabs conversation with context overrides
+      console.log('Starting ElevenLabs conversation with notes context...');
+      await conversation.startSession({ 
+        signedUrl,
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: systemPrompt
+            },
+            firstMessage: firstMessage,
+            language: 'en'
+          }
+        }
+      });
       
     } catch (err) {
       console.error('Failed to start voice agent:', err);
@@ -122,9 +157,14 @@ export const useVoiceAgent = () => {
     }
   }, [conversation]);
 
+  const clearTranscript = useCallback(() => {
+    setTranscript([]);
+  }, []);
+
   return {
     start,
     stop,
+    clearTranscript,
     isConnected,
     isSpeaking,
     error,

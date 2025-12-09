@@ -1,28 +1,38 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Sparkles } from 'lucide-react';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+const AGENT_NAME = 'Zen';
+
 export const VoiceButton = () => {
   const { start, stop, isConnected, isSpeaking, error, transcript } = useVoiceAgent();
 
+  const handleStart = async () => {
+    await start();
+  };
+
+  const handleStop = async () => {
+    await stop();
+  };
+
   return (
-    <Card className="p-6">
+    <Card className="p-6 glass-strong">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Talk to Pat</h3>
+            <h3 className="text-lg font-semibold gradient-text">Talk to {AGENT_NAME}</h3>
             <p className="text-sm text-muted-foreground">
-              Have a voice conversation with your HR assistant
+              Have a voice conversation with your notes consultant
             </p>
           </div>
           {isConnected && (
-            <Badge variant={isSpeaking ? "default" : "secondary"}>
-              {isSpeaking ? "Pat is speaking..." : "Listening..."}
+            <Badge variant={isSpeaking ? "default" : "secondary"} className={isSpeaking ? 'animate-pulse' : ''}>
+              {isSpeaking ? `${AGENT_NAME} is speaking...` : "Listening..."}
             </Badge>
           )}
         </div>
@@ -36,10 +46,10 @@ export const VoiceButton = () => {
 
         {/* Voice Control Button */}
         <Button
-          onClick={isConnected ? stop : start}
+          onClick={isConnected ? handleStop : handleStart}
           size="lg"
           variant={isConnected ? "destructive" : "default"}
-          className="w-full"
+          className={`w-full ${!isConnected ? 'hover-glow' : ''}`}
         >
           {isConnected ? (
             <>
@@ -59,20 +69,20 @@ export const VoiceButton = () => {
           <div className="flex items-center justify-center gap-3 py-4">
             <div className={`
               h-12 w-12 rounded-full flex items-center justify-center transition-all
-              ${isSpeaking ? 'bg-primary animate-pulse' : 'bg-muted'}
+              ${isSpeaking ? 'bg-primary glow-primary animate-pulse' : 'bg-muted'}
             `}>
               {isSpeaking ? (
-                <MicOff className="h-6 w-6 text-primary-foreground" />
+                <Sparkles className="h-6 w-6 text-primary-foreground" />
               ) : (
                 <Mic className="h-6 w-6 text-muted-foreground" />
               )}
             </div>
             <div className="text-center">
               <div className="text-sm font-medium">
-                {isSpeaking ? "Pat is speaking" : "You can speak now"}
+                {isSpeaking ? `${AGENT_NAME} is speaking` : "You can speak now"}
               </div>
               <div className="text-xs text-muted-foreground">
-                {isSpeaking ? "Please listen" : "Ask anything about HR"}
+                {isSpeaking ? "Please listen" : "Ask about your notes"}
               </div>
             </div>
           </div>
@@ -87,7 +97,7 @@ export const VoiceButton = () => {
             {transcript.map((msg, i) => (
               <div key={i} className={`text-sm ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                 <Badge variant={msg.role === 'user' ? 'secondary' : 'default'} className="text-xs mb-1">
-                  {msg.role === 'user' ? 'You' : 'Pat'}
+                  {msg.role === 'user' ? 'You' : AGENT_NAME}
                 </Badge>
                 <div className="mt-1 text-foreground/90">{msg.text}</div>
               </div>

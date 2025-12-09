@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Sparkles, Filter, User, Loader2, Volume2, VolumeX, X, Mic, MicOff } from 'lucide-react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { Send, Sparkles, Filter, User, Loader2, Volume2, VolumeX, Mic, MicOff, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,8 @@ import { useNotes } from '@/contexts/NotesContext';
 import { ionosAI } from '@/services/ionosAI';
 import { toast } from 'sonner';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
+import ZenAvatar3D from '@/components/ZenAvatar3D';
 
 interface Message {
   id: string;
@@ -26,6 +28,8 @@ interface ContextFilter {
   dateRange: 'all' | 'week' | 'month';
 }
 
+const AGENT_NAME = 'Zen';
+
 const Assistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -40,6 +44,7 @@ const Assistant: React.FC = () => {
   });
   const scrollRef = useRef<HTMLDivElement>(null);
   const { notes } = useNotes();
+  const { playClick, playSuccess, playConnect, playDisconnect } = useSoundEffects();
   
   // Voice agent hook
   const { 
@@ -55,31 +60,7 @@ const Assistant: React.FC = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
-
-  // Handle voice mode toggle
-  const handleVoiceModeToggle = async () => {
-    if (voiceMode) {
-      await stopVoiceAgent();
-      setVoiceMode(false);
-      toast.success('Voice mode disabled');
-    } else {
-      try {
-        await startVoiceAgent();
-        setVoiceMode(true);
-        toast.success('Voice mode enabled - start speaking!');
-      } catch (err) {
-        toast.error('Failed to start voice mode');
-      }
-    }
-  };
-
-  // Show voice errors
-  useEffect(() => {
-    if (voiceError) {
-      toast.error(voiceError);
-    }
-  }, [voiceError]);
+  }, [messages, transcript]);
 
   const getFilteredNotes = () => {
     let filtered = [...notes];
@@ -114,15 +95,46 @@ const Assistant: React.FC = () => {
 Type: ${note.type}
 Created: ${new Date(note.createdAt).toLocaleDateString()}
 ${summary ? `Summary: ${summary}` : ''}
-Content: ${content.slice(0, 1000)}${content.length > 1000 ? '...' : ''}
----`;
-    }).join('\n\n');
+Content: ${content.slice(0, 800)}${content.length > 800 ? '...' : ''}`;
+    }).join('\n\n---\n\n');
 
     return context;
   };
 
+  // Handle voice mode toggle with notes context
+  const handleVoiceModeToggle = async () => {
+    if (voiceMode) {
+      await stopVoiceAgent();
+      setVoiceMode(false);
+      playDisconnect();
+      toast.success('Voice mode disabled');
+    } else {
+      try {
+        const notesContext = buildContext();
+        await startVoiceAgent({ 
+          notesContext, 
+          agentName: AGENT_NAME 
+        });
+        setVoiceMode(true);
+        playConnect();
+        toast.success(`${AGENT_NAME} is listening!`);
+      } catch (err) {
+        toast.error('Failed to start voice mode');
+      }
+    }
+  };
+
+  // Show voice errors
+  useEffect(() => {
+    if (voiceError) {
+      toast.error(voiceError);
+    }
+  }, [voiceError]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+    
+    playClick();
     
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -139,7 +151,7 @@ Content: ${content.slice(0, 1000)}${content.length > 1000 ? '...' : ''}
       const context = buildContext();
       const filteredCount = getFilteredNotes().length;
       
-      const systemPrompt = `You are Zen TOT, an intelligent AI assistant that helps users understand and work with their notes. 
+      const systemPrompt = `You are ${AGENT_NAME}, an intelligent AI assistant that helps users understand and work with their notes. 
 You have access to the following notes from the user's collection:
 
 ${context || 'No notes available in the current context.'}
@@ -162,6 +174,7 @@ Be helpful, concise, and reference specific notes when relevant.`;
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      playSuccess();
 
       // Text-to-speech if enabled
       if (voiceEnabled && response && 'speechSynthesis' in window) {
@@ -186,49 +199,46 @@ Be helpful, concise, and reference specific notes when relevant.`;
   const filteredNotesCount = getFilteredNotes().length;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
+      <div className="p-4 border-b border-border glass-strong">
+        <div className="flex items-center justify-between max-w-5xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <Bot className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="font-semibold">Zen Assistant</h1>
-              <p className="text-sm text-muted-foreground">Ask questions about your notes</p>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-primary/20 text-primary">
+                <Sparkles className="h-3 w-3 mr-1" />
+                {filteredNotesCount} Notes
+              </Badge>
+              {voiceConnected && (
+                <Badge variant="default" className="bg-green-500/20 text-green-400 animate-pulse">
+                  Live
+                </Badge>
+              )}
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Voice Mode Toggle */}
-            <Button
-              variant={voiceMode ? 'default' : 'outline'}
-              size="sm"
-              onClick={handleVoiceModeToggle}
-              className={voiceMode ? 'bg-primary animate-pulse' : ''}
-            >
-              {voiceMode ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-              <span className="ml-1">{voiceMode ? 'Voice On' : 'Voice Mode'}</span>
-            </Button>
-            
             {/* TTS Toggle */}
             <Button
               variant={voiceEnabled ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              onClick={() => {
+                playClick();
+                setVoiceEnabled(!voiceEnabled);
+              }}
+              className="hover-glow"
             >
               {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={playClick} className="hover-glow">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filter Context
+                  Filter
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-72">
+              <PopoverContent className="w-72 glass-strong">
                 <div className="space-y-4">
                   <h4 className="font-medium">Context Filters</h4>
                   
@@ -252,8 +262,9 @@ Be helpful, concise, and reference specific notes when relevant.`;
                             <Badge
                               key={type}
                               variant={filter.types.includes(type) ? 'default' : 'outline'}
-                              className="cursor-pointer"
+                              className="cursor-pointer hover-scale"
                               onClick={() => {
+                                playClick();
                                 setFilter(prev => ({
                                   ...prev,
                                   types: prev.types.includes(type)
@@ -290,8 +301,11 @@ Be helpful, concise, and reference specific notes when relevant.`;
                             <Badge
                               key={value}
                               variant={filter.dateRange === value ? 'default' : 'outline'}
-                              className="cursor-pointer"
-                              onClick={() => setFilter(prev => ({ ...prev, dateRange: value as any }))}
+                              className="cursor-pointer hover-scale"
+                              onClick={() => {
+                                playClick();
+                                setFilter(prev => ({ ...prev, dateRange: value as 'all' | 'week' | 'month' }));
+                              }}
                             >
                               {label}
                             </Badge>
@@ -307,119 +321,198 @@ Be helpful, concise, and reference specific notes when relevant.`;
         </div>
       </div>
 
-      {/* Context Badge */}
-      <div className="p-4 border-b border-border bg-secondary/50">
-        <div className="max-w-4xl mx-auto flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm text-muted-foreground">Using context from:</span>
-          <Badge variant="secondary">{filteredNotesCount} Notes</Badge>
-          {!filter.useAllNotes && filter.types.length > 0 && (
-            <Badge variant="outline">{filter.types.join(', ')}</Badge>
-          )}
-          {!filter.useAllNotes && filter.starred && (
-            <Badge variant="outline">Starred</Badge>
-          )}
-        </div>
-      </div>
-
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="max-w-4xl mx-auto space-y-4">
-          {messages.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <Bot className="h-10 w-10 text-primary" />
-              </div>
-              <h2 className="text-xl font-semibold mb-2">Ask me anything</h2>
-              <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                I can search through your notes, find patterns, and help you extract insights 
-                from your captured content.
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("What were my action items from last week?")}
-                >
-                  What were my action items?
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("Summarize my recent notes")}
-                >
-                  Summarize recent notes
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("What topics appear most in my notes?")}
-                >
-                  Find common topics
-                </Button>
-              </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center overflow-hidden">
+        {/* Avatar Section */}
+        <div className="w-full max-w-md h-64 md:h-80 relative">
+          <Suspense fallback={
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="w-32 h-32 rounded-full bg-primary/20 animate-pulse-glow" />
             </div>
-          ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-                <div className="flex flex-col gap-1 max-w-[80%]">
+          }>
+            <ZenAvatar3D 
+              isSpeaking={isSpeaking} 
+              isConnected={voiceConnected} 
+            />
+          </Suspense>
+          
+          {/* Agent Name & Status */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+            <h2 className="text-2xl font-bold gradient-text">{AGENT_NAME}</h2>
+            <p className="text-sm text-muted-foreground">
+              {voiceConnected 
+                ? isSpeaking ? 'Speaking...' : 'Listening...' 
+                : 'Your Notes Consultant'}
+            </p>
+          </div>
+        </div>
+
+        {/* Chat/Transcript Area */}
+        <ScrollArea className="flex-1 w-full max-w-4xl px-4" ref={scrollRef}>
+          <div className="space-y-4 py-4">
+            {/* Show voice transcript when in voice mode */}
+            {voiceMode && transcript.length > 0 ? (
+              transcript.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                >
+                  {msg.role === 'agent' && (
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 glow-primary">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
                   <div
-                    className={`p-4 rounded-2xl ${
-                      message.role === 'user'
+                    className={`p-4 rounded-2xl max-w-[80%] ${
+                      msg.role === 'user'
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-card border border-border'
+                        : 'glass-strong'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p className="whitespace-pre-wrap">{msg.text}</p>
                   </div>
-                  {message.notesUsed !== undefined && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      Used {message.notesUsed} notes for context
-                    </span>
+                  {msg.role === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    </div>
                   )}
                 </div>
-                {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <User className="h-4 w-4 text-primary-foreground" />
+              ))
+            ) : messages.length > 0 ? (
+              messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                >
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 glow-primary">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1 max-w-[80%]">
+                    <div
+                      className={`p-4 rounded-2xl ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'glass-strong'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                    {message.notesUsed !== undefined && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        Used {message.notesUsed} notes
+                      </span>
+                    )}
                   </div>
-                )}
+                  {message.role === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : !voiceMode ? (
+              <div className="text-center py-8 animate-fade-in">
+                <p className="text-muted-foreground mb-6">
+                  Ask {AGENT_NAME} anything about your notes, or start a voice conversation.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="hover-glow"
+                    onClick={() => {
+                      playClick();
+                      setInput("What were my action items from last week?");
+                    }}
+                  >
+                    What were my action items?
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="hover-glow"
+                    onClick={() => {
+                      playClick();
+                      setInput("Summarize my recent notes");
+                    }}
+                  >
+                    Summarize notes
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="hover-glow"
+                    onClick={() => {
+                      playClick();
+                      setInput("What topics appear most?");
+                    }}
+                  >
+                    Find patterns
+                  </Button>
+                </div>
               </div>
-            ))
-          )}
-          {isLoading && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Bot className="h-4 w-4 text-primary" />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground animate-fade-in">
+                <p>Speak to {AGENT_NAME}...</p>
               </div>
-              <div className="bg-card border border-border rounded-2xl p-4">
-                <Loader2 className="h-5 w-5 animate-spin" />
+            )}
+            
+            {isLoading && (
+              <div className="flex gap-3 animate-fade-in">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 animate-pulse-glow">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div className="glass-strong rounded-2xl p-4">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-border">
-        <div className="max-w-4xl mx-auto flex gap-3">
-          <Input
-            placeholder="Ask about your notes..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <Button onClick={handleSend} disabled={!input.trim() || isLoading}>
-            <Send className="h-4 w-4" />
+      {/* Input Area */}
+      <div className="p-4 border-t border-border glass-strong">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          {/* Text Input */}
+          <div className="flex-1 flex gap-2">
+            <Input
+              placeholder={voiceMode ? "Voice mode active..." : `Ask ${AGENT_NAME} about your notes...`}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              className="flex-1 glass"
+              disabled={isLoading || voiceMode}
+            />
+            <Button 
+              onClick={handleSend} 
+              disabled={!input.trim() || isLoading || voiceMode}
+              className="hover-glow"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Voice Button */}
+          <Button
+            variant={voiceMode ? 'default' : 'outline'}
+            size="lg"
+            onClick={handleVoiceModeToggle}
+            className={`relative px-6 ${voiceMode ? 'glow-primary animate-pulse-glow' : 'hover-glow'}`}
+          >
+            {voiceMode ? (
+              <>
+                <MicOff className="h-5 w-5 mr-2" />
+                End
+              </>
+            ) : (
+              <>
+                <Mic className="h-5 w-5 mr-2" />
+                Voice
+              </>
+            )}
           </Button>
         </div>
       </div>
