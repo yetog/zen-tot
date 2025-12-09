@@ -610,24 +610,26 @@ export const NewNoteModal: React.FC<NewNoteModalProps> = ({ open, onOpenChange }
         </SheetHeader>
 
         {!selectedOption ? (
-          <div className="space-y-2">
-            {captureOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setSelectedOption(option)}
-                className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-secondary transition-colors text-left group"
-              >
-                <div className="w-10 h-10 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                  <option.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{option.label}</p>
-                  <p className="text-sm text-muted-foreground">{option.description}</p>
-                </div>
-                <Star className="h-5 w-5 text-muted-foreground/30 hover:text-primary transition-colors" />
-              </button>
-            ))}
-          </div>
+          <ScrollArea className="h-[calc(85vh-120px)]">
+            <div className="space-y-2 pr-4">
+              {captureOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setSelectedOption(option)}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-secondary transition-colors text-left group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                    <option.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{option.label}</p>
+                    <p className="text-sm text-muted-foreground">{option.description}</p>
+                  </div>
+                  <Star className="h-5 w-5 text-muted-foreground/30 hover:text-primary transition-colors" />
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
         ) : (
           renderInputPanel()
         )}
