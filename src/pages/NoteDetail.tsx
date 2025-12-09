@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Search, X, Volume2, VolumeX, Pencil, Save, XCircle } from 'lucide-react';
+import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb, FolderOpen, Hash, Search, X, Volume2, VolumeX, Pencil, Save, XCircle, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -316,6 +316,20 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
           </Button>
           <Button variant="ghost" size="icon" onClick={handleDelete} className="transition-transform hover:scale-110">
             <Trash2 className="h-5 w-5 text-destructive" />
+          </Button>
+          
+          {/* Save to Knowledge Base */}
+          <Button
+            variant={note.inKnowledgeBase ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              updateNote(note.id, { inKnowledgeBase: !note.inKnowledgeBase });
+              toast.success(note.inKnowledgeBase ? 'Removed from Knowledge Base' : 'Added to Knowledge Base');
+            }}
+            className="transition-transform hover:scale-105 gap-1"
+          >
+            <Brain className="h-4 w-4" />
+            {note.inKnowledgeBase ? 'In KB' : 'Save to KB'}
           </Button>
         </div>
       </div>

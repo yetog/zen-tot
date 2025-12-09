@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Sparkles, Filter, User, Loader2, Volume2, VolumeX, X } from 'lucide-react';
+import { Send, Bot, Sparkles, Filter, User, Loader2, Volume2, VolumeX, X, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useNotes } from '@/contexts/NotesContext';
 import { ionosAI } from '@/services/ionosAI';
 import { toast } from 'sonner';
+import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 
 interface Message {
   id: string;
@@ -30,6 +31,7 @@ const Assistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
   const [filter, setFilter] = useState<ContextFilter>({
     useAllNotes: true,
     types: [],
@@ -38,12 +40,46 @@ const Assistant: React.FC = () => {
   });
   const scrollRef = useRef<HTMLDivElement>(null);
   const { notes } = useNotes();
+  
+  // Voice agent hook
+  const { 
+    start: startVoiceAgent, 
+    stop: stopVoiceAgent, 
+    isConnected: voiceConnected, 
+    isSpeaking,
+    transcript,
+    error: voiceError 
+  } = useVoiceAgent();
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Handle voice mode toggle
+  const handleVoiceModeToggle = async () => {
+    if (voiceMode) {
+      await stopVoiceAgent();
+      setVoiceMode(false);
+      toast.success('Voice mode disabled');
+    } else {
+      try {
+        await startVoiceAgent();
+        setVoiceMode(true);
+        toast.success('Voice mode enabled - start speaking!');
+      } catch (err) {
+        toast.error('Failed to start voice mode');
+      }
+    }
+  };
+
+  // Show voice errors
+  useEffect(() => {
+    if (voiceError) {
+      toast.error(voiceError);
+    }
+  }, [voiceError]);
 
   const getFilteredNotes = () => {
     let filtered = [...notes];
@@ -165,6 +201,18 @@ Be helpful, concise, and reference specific notes when relevant.`;
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Voice Mode Toggle */}
+            <Button
+              variant={voiceMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={handleVoiceModeToggle}
+              className={voiceMode ? 'bg-primary animate-pulse' : ''}
+            >
+              {voiceMode ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              <span className="ml-1">{voiceMode ? 'Voice On' : 'Voice Mode'}</span>
+            </Button>
+            
+            {/* TTS Toggle */}
             <Button
               variant={voiceEnabled ? 'default' : 'outline'}
               size="sm"

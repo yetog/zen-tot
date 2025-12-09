@@ -28,11 +28,15 @@ export interface Note {
   followUpEmail?: string;
   quizContent?: string;
   chatInsights?: string[];
+  analysis?: string;
   
   // Organization
   folderId?: string;
   tags?: string[];
   starred?: boolean;
+  
+  // Knowledge Base
+  inKnowledgeBase?: boolean;
   
   // Metadata (flexible for different note types)
   metadata?: Record<string, any>;
