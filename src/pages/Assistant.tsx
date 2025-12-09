@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Filter, User, Loader2, Volume2, VolumeX, Mic, MicOff, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { ionosAI } from '@/services/ionosAI';
 import { toast } from 'sonner';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import ZenAvatar3D from '@/components/ZenAvatar3D';
+import ZenAvatar2D from '@/components/ZenAvatar2D';
 
 interface Message {
   id: string;
@@ -324,17 +324,11 @@ Be helpful, concise, and reference specific notes when relevant.`;
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center overflow-hidden">
         {/* Avatar Section */}
-        <div className="w-full max-w-md h-64 md:h-80 relative">
-          <Suspense fallback={
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full bg-primary/20 animate-pulse-glow" />
-            </div>
-          }>
-            <ZenAvatar3D 
-              isSpeaking={isSpeaking} 
-              isConnected={voiceConnected} 
-            />
-          </Suspense>
+        <div className="w-full max-w-md h-64 md:h-80 relative flex items-center justify-center">
+          <ZenAvatar2D 
+            isSpeaking={isSpeaking} 
+            isConnected={voiceConnected} 
+          />
           
           {/* Agent Name & Status */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
