@@ -5,49 +5,8 @@
 /* Zen TOT Design System - Contemporary Dark Theme */
 
 @layer base {
+  /* Force dark mode - Zen TOT is always in futuristic dark mode */
   :root {
-    /* Light Mode */
-    --background: 0 0% 100%;
-    --foreground: 240 10% 10%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
-
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 10%;
-
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 262 83% 58%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 262 83% 58%;
-  }
-
-  .dark {
     --background: 240 10% 4%;
     --foreground: 0 0% 95%;
     
@@ -59,6 +18,7 @@
     
     --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 262 83% 70%;
     
     --secondary: 240 5% 14%;
     --secondary-foreground: 0 0% 95%;
@@ -66,7 +26,7 @@
     --muted: 240 5% 18%;
     --muted-foreground: 240 5% 65%;
     
-    --accent: 262 83% 65%;
+    --accent: 280 80% 60%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 72% 51%;
@@ -76,6 +36,8 @@
     --input: 240 5% 18%;
     --ring: 262 83% 58%;
 
+    --radius: 0.75rem;
+
     --sidebar-background: 240 10% 5%;
     --sidebar-foreground: 240 5% 65%;
     --sidebar-primary: 262 83% 58%;
@@ -84,6 +46,12 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 240 5% 18%;
     --sidebar-ring: 262 83% 58%;
+    
+    /* Futuristic glow colors */
+    --glow-primary: 262 83% 58%;
+    --glow-accent: 280 80% 60%;
+    --glow-cyan: 180 100% 50%;
+    --glow-pink: 320 80% 60%;
   }
 }
 
@@ -103,12 +71,18 @@
     @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
   
+  .glass-strong {
+    @apply bg-card/90 backdrop-blur-2xl border border-primary/20 shadow-xl shadow-primary/5;
+  }
+  
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+    background-size: 200% auto;
+    animation: shimmer 3s linear infinite;
   }
   
   .hover-lift {
-    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10;
+    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/20;
   }
 
   .hover-scale {
@@ -116,7 +90,42 @@
   }
 
   .hover-glow {
-    @apply transition-shadow duration-300 hover:shadow-lg hover:shadow-primary/20;
+    @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/30;
+  }
+  
+  .futuristic-border {
+    @apply border border-primary/20 relative;
+    box-shadow: 
+      inset 0 1px 0 0 hsl(var(--primary) / 0.1),
+      0 0 20px -5px hsl(var(--primary) / 0.3);
+  }
+  
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2);
+  }
+  
+  .glow-accent {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.4), 0 0 40px hsl(var(--accent) / 0.2);
+  }
+  
+  .glow-cyan {
+    box-shadow: 0 0 20px hsl(180 100% 50% / 0.4), 0 0 40px hsl(180 100% 50% / 0.2);
+  }
+  
+  .scanner-line {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .scanner-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+    animation: scan 2s linear infinite;
   }
 
   .stagger-1 { animation-delay: 50ms; }
@@ -124,6 +133,14 @@
   .stagger-3 { animation-delay: 150ms; }
   .stagger-4 { animation-delay: 200ms; }
   .stagger-5 { animation-delay: 250ms; }
+  
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
 }
 
 /* Smooth scrollbar */
