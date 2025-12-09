@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
+import ForceGraph3D from 'react-force-graph-3d';
 import { useNavigate } from 'react-router-dom';
 import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
@@ -23,14 +23,18 @@ import {
   Youtube,
   Globe,
   Image,
-  Type
+  Type,
+  Sparkles
 } from 'lucide-react';
 import { NoteType } from '@/types/note';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { findSimilarNotes } from '@/services/embeddingService';
+import * as THREE from 'three';
 
 interface GraphNode {
   id: string;
   name: string;
-  type: NoteType;
+  type: NoteType | 'tag' | 'folder';
   val: number;
   color: string;
   isTag?: boolean;
@@ -43,45 +47,36 @@ interface GraphLink {
   source: string;
   target: string;
   value: number;
-  type: 'tag' | 'folder';
+  type: 'tag' | 'folder' | 'similarity';
 }
 
 const typeColors: Record<string, string> = {
-  audio: 'hsl(220, 90%, 60%)',
-  video: 'hsl(280, 80%, 60%)',
-  pdf: 'hsl(0, 80%, 60%)',
-  youtube: 'hsl(0, 100%, 50%)',
-  web: 'hsl(150, 70%, 50%)',
-  text: 'hsl(45, 90%, 55%)',
-  image: 'hsl(320, 70%, 60%)',
-  tag: 'hsl(180, 70%, 50%)',
-  folder: 'hsl(35, 90%, 55%)',
-};
-
-const typeIcons: Record<string, React.FC<{ className?: string }>> = {
-  audio: Mic,
-  video: Mic,
-  pdf: FileText,
-  youtube: Youtube,
-  web: Globe,
-  text: Type,
-  image: Image,
+  audio: '#3B82F6',
+  video: '#8B5CF6',
+  pdf: '#EF4444',
+  youtube: '#DC2626',
+  web: '#22C55E',
+  text: '#EAB308',
+  image: '#EC4899',
+  tag: '#06B6D4',
+  folder: '#F97316',
 };
 
 const KnowledgeGraph: React.FC = () => {
   const navigate = useNavigate();
-  const { notes, folders, tags } = useNotes();
+  const { notes, folders } = useNotes();
   const graphRef = useRef<any>(null);
+  const { playClick, playWhoosh, playHover } = useSoundEffects();
   
   const [filterType, setFilterType] = useState<string>('all');
   const [filterFolder, setFilterFolder] = useState<string>('all');
   const [showTags, setShowTags] = useState(true);
   const [showFolders, setShowFolders] = useState(true);
+  const [showSimilarity, setShowSimilarity] = useState(true);
   const [linkDistance, setLinkDistance] = useState([100]);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
-  // Handle resize
   useEffect(() => {
     const handleResize = () => {
       const container = document.getElementById('graph-container');
@@ -98,14 +93,13 @@ const KnowledgeGraph: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Build graph data
+  // Build graph data with semantic connections
   const graphData = useMemo(() => {
     const nodes: GraphNode[] = [];
     const links: GraphLink[] = [];
     const tagNodeIds = new Set<string>();
     const folderNodeIds = new Set<string>();
 
-    // Filter notes
     let filteredNotes = notes.filter(n => n.inKnowledgeBase !== false);
     
     if (filterType !== 'all') {
@@ -123,7 +117,7 @@ const KnowledgeGraph: React.FC = () => {
         name: note.title,
         type: note.type,
         val: Math.max(5, Math.min(20, contentLength / 200)),
-        color: typeColors[note.type] || 'hsl(200, 50%, 50%)',
+        color: typeColors[note.type] || '#6366F1',
         folderId: note.folderId,
         starred: note.starred,
       });
@@ -137,7 +131,7 @@ const KnowledgeGraph: React.FC = () => {
             nodes.push({
               id: tagId,
               name: `#${tagName}`,
-              type: 'text',
+              type: 'tag',
               val: 8,
               color: typeColors.tag,
               isTag: true,
@@ -162,7 +156,7 @@ const KnowledgeGraph: React.FC = () => {
             nodes.push({
               id: folderId,
               name: `📁 ${folder.name}`,
-              type: 'text',
+              type: 'folder',
               val: 12,
               color: typeColors.folder,
               isFolder: true,
@@ -176,117 +170,97 @@ const KnowledgeGraph: React.FC = () => {
           });
         }
       }
-    });
 
-    // Create connections between notes that share tags
-    const tagToNotes: Record<string, string[]> = {};
-    filteredNotes.forEach(note => {
-      note.tags?.forEach(tag => {
-        if (!tagToNotes[tag]) tagToNotes[tag] = [];
-        tagToNotes[tag].push(note.id);
-      });
+      // Create similarity connections
+      if (showSimilarity) {
+        const similarNotes = findSimilarNotes(note, filteredNotes, 3);
+        similarNotes.forEach(({ note: similarNote, similarity }) => {
+          // Avoid duplicate links
+          const linkExists = links.some(l => 
+            (l.source === note.id && l.target === similarNote.id) ||
+            (l.source === similarNote.id && l.target === note.id)
+          );
+          if (!linkExists && similarity > 0.15) {
+            links.push({
+              source: note.id,
+              target: similarNote.id,
+              value: similarity * 3,
+              type: 'similarity',
+            });
+          }
+        });
+      }
     });
 
     return { nodes, links };
-  }, [notes, folders, filterType, filterFolder, showTags, showFolders]);
+  }, [notes, folders, filterType, filterFolder, showTags, showFolders, showSimilarity]);
 
-  const handleNodeClick = useCallback((node: GraphNode) => {
+  const handleNodeClick = useCallback((node: any) => {
+    playClick();
     if (node.isTag || node.isFolder) return;
-    navigate(`/note/${node.id}`);
-  }, [navigate]);
+    
+    // Zoom to node then navigate
+    if (graphRef.current) {
+      const distance = 100;
+      const distRatio = 1 + distance / Math.hypot(node.x || 0, node.y || 0, node.z || 0);
+      graphRef.current.cameraPosition(
+        { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
+        node,
+        1000
+      );
+      setTimeout(() => navigate(`/note/${node.id}`), 1000);
+    } else {
+      navigate(`/note/${node.id}`);
+    }
+  }, [navigate, playClick]);
 
   const handleZoomIn = () => {
+    playClick();
     if (graphRef.current) {
-      graphRef.current.zoom(graphRef.current.zoom() * 1.5, 400);
+      const currentPos = graphRef.current.cameraPosition();
+      graphRef.current.cameraPosition(
+        { x: currentPos.x * 0.7, y: currentPos.y * 0.7, z: currentPos.z * 0.7 },
+        null,
+        500
+      );
     }
   };
 
   const handleZoomOut = () => {
+    playClick();
     if (graphRef.current) {
-      graphRef.current.zoom(graphRef.current.zoom() / 1.5, 400);
+      const currentPos = graphRef.current.cameraPosition();
+      graphRef.current.cameraPosition(
+        { x: currentPos.x * 1.5, y: currentPos.y * 1.5, z: currentPos.z * 1.5 },
+        null,
+        500
+      );
     }
   };
 
   const handleReset = () => {
+    playWhoosh();
     if (graphRef.current) {
-      graphRef.current.zoomToFit(400, 50);
+      graphRef.current.cameraPosition({ x: 0, y: 0, z: 500 }, { x: 0, y: 0, z: 0 }, 1000);
     }
   };
-
-  const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const label = node.name;
-    const fontSize = Math.max(10 / globalScale, 3);
-    ctx.font = `${fontSize}px Inter, sans-serif`;
-    
-    const nodeSize = node.val || 5;
-    
-    // Draw glow for starred notes
-    if (node.starred) {
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, nodeSize + 4, 0, 2 * Math.PI);
-      ctx.fillStyle = 'hsla(45, 100%, 50%, 0.3)';
-      ctx.fill();
-    }
-
-    // Draw node
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI);
-    
-    // Different styles for different node types
-    if (node.isTag) {
-      ctx.fillStyle = node.color;
-      ctx.strokeStyle = 'hsl(180, 70%, 70%)';
-      ctx.lineWidth = 2 / globalScale;
-    } else if (node.isFolder) {
-      ctx.fillStyle = node.color;
-      ctx.strokeStyle = 'hsl(35, 90%, 70%)';
-      ctx.lineWidth = 2 / globalScale;
-    } else {
-      ctx.fillStyle = node.color;
-      ctx.strokeStyle = 'hsla(0, 0%, 100%, 0.3)';
-      ctx.lineWidth = 1 / globalScale;
-    }
-    
-    ctx.fill();
-    ctx.stroke();
-
-    // Draw label
-    if (globalScale > 0.5 || node.isTag || node.isFolder) {
-      ctx.fillStyle = 'hsl(0, 0%, 90%)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label.slice(0, 20), node.x, node.y + nodeSize + fontSize);
-    }
-  }, []);
-
-  const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const start = link.source;
-    const end = link.target;
-    
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-    
-    ctx.strokeStyle = link.type === 'folder' 
-      ? 'hsla(35, 70%, 50%, 0.4)' 
-      : 'hsla(180, 50%, 50%, 0.3)';
-    ctx.lineWidth = link.value / globalScale;
-    ctx.stroke();
-  }, []);
 
   const noteTypes = ['all', 'audio', 'pdf', 'youtube', 'text', 'web', 'image'];
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-background">
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border glass-strong">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center pulse-glow">
               <Brain className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-semibold">Knowledge Graph</h1>
+              <h1 className="font-semibold flex items-center gap-2">
+                Knowledge Graph 
+                <Badge variant="outline" className="text-xs animate-pulse">3D</Badge>
+              </h1>
               <p className="text-sm text-muted-foreground">
                 Visualize connections between {graphData.nodes.filter(n => !n.isTag && !n.isFolder).length} notes
               </p>
@@ -298,8 +272,8 @@ const KnowledgeGraph: React.FC = () => {
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-32">
+              <Select value={filterType} onValueChange={(v) => { playClick(); setFilterType(v); }}>
+                <SelectTrigger className="w-32 glass">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -311,8 +285,8 @@ const KnowledgeGraph: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={filterFolder} onValueChange={setFilterFolder}>
-                <SelectTrigger className="w-36">
+              <Select value={filterFolder} onValueChange={(v) => { playClick(); setFilterFolder(v); }}>
+                <SelectTrigger className="w-36 glass">
                   <SelectValue placeholder="All folders" />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,28 +305,39 @@ const KnowledgeGraph: React.FC = () => {
               <Button
                 variant={showTags ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowTags(!showTags)}
+                onClick={() => { playClick(); setShowTags(!showTags); }}
+                className="hover-glow"
               >
                 Tags
               </Button>
               <Button
                 variant={showFolders ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowFolders(!showFolders)}
+                onClick={() => { playClick(); setShowFolders(!showFolders); }}
+                className="hover-glow"
               >
                 Folders
+              </Button>
+              <Button
+                variant={showSimilarity ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { playClick(); setShowSimilarity(!showSimilarity); }}
+                className="hover-glow"
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Similar
               </Button>
             </div>
 
             {/* Zoom controls */}
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" onClick={handleZoomIn}>
+              <Button variant="outline" size="icon" onClick={handleZoomIn} className="hover-glow">
                 <ZoomIn className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={handleZoomOut}>
+              <Button variant="outline" size="icon" onClick={handleZoomOut} className="hover-glow">
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={handleReset}>
+              <Button variant="outline" size="icon" onClick={handleReset} className="hover-glow">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
@@ -361,44 +346,102 @@ const KnowledgeGraph: React.FC = () => {
       </div>
 
       {/* Graph Container */}
-      <div id="graph-container" className="flex-1 relative bg-gradient-to-br from-background via-background to-primary/5">
+      <div id="graph-container" className="flex-1 relative overflow-hidden">
+        {/* Futuristic background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.1),transparent_70%)]" />
+        
         {graphData.nodes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Brain className="h-16 w-16 text-muted-foreground mb-4" />
+          <div className="flex flex-col items-center justify-center h-full text-center relative z-10">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6 pulse-glow">
+              <Brain className="h-12 w-12 text-primary" />
+            </div>
             <h2 className="text-xl font-semibold mb-2">No notes to visualize</h2>
             <p className="text-muted-foreground max-w-md">
               Create some notes and add tags to see how your ideas connect!
             </p>
           </div>
         ) : (
-          <ForceGraph2D
+          <ForceGraph3D
             ref={graphRef}
             graphData={graphData}
             width={dimensions.width}
             height={dimensions.height}
-            nodeCanvasObject={nodeCanvasObject}
-            linkCanvasObject={linkCanvasObject}
-            onNodeClick={handleNodeClick}
-            onNodeHover={setHoveredNode}
-            nodeRelSize={6}
+            backgroundColor="rgba(0,0,0,0)"
+            nodeLabel={(node: any) => `
+              <div style="background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.3);">
+                <strong>${node.name}</strong><br/>
+                <small style="color: #a1a1aa;">${node.type}</small>
+              </div>
+            `}
+            nodeColor={(node: any) => node.color}
+            nodeVal={(node: any) => node.val}
+            nodeOpacity={0.9}
+            linkColor={(link: any) => 
+              link.type === 'similarity' ? 'rgba(139,92,246,0.4)' :
+              link.type === 'folder' ? 'rgba(249,115,22,0.4)' : 
+              'rgba(6,182,212,0.3)'
+            }
+            linkWidth={(link: any) => link.value}
+            linkOpacity={0.6}
             linkDirectionalParticles={2}
             linkDirectionalParticleSpeed={0.005}
-            d3AlphaDecay={0.02}
-            d3VelocityDecay={0.3}
-            cooldownTicks={100}
-            backgroundColor="transparent"
+            linkDirectionalParticleWidth={2}
+            linkDirectionalParticleColor={(link: any) =>
+              link.type === 'similarity' ? '#8B5CF6' :
+              link.type === 'folder' ? '#F97316' :
+              '#06B6D4'
+            }
+            onNodeClick={handleNodeClick}
+            onNodeHover={(node: any) => {
+              if (node && !node.isTag && !node.isFolder) {
+                playHover();
+              }
+              setHoveredNode(node as GraphNode | null);
+            }}
+            nodeThreeObject={(node: any) => {
+              // Create glowing sphere for nodes
+              const sphereGeometry = new THREE.SphereGeometry(node.val || 5, 32, 32);
+              const sphereMaterial = new THREE.MeshBasicMaterial({
+                color: node.color,
+                transparent: true,
+                opacity: 0.85,
+              });
+              const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+              
+              // Add glow effect for starred nodes
+              if (node.starred) {
+                const glowGeometry = new THREE.SphereGeometry((node.val || 5) * 1.3, 32, 32);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                  color: '#FFD700',
+                  transparent: true,
+                  opacity: 0.3,
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                sphere.add(glow);
+              }
+              
+              return sphere;
+            }}
+            enableNodeDrag={true}
+            enableNavigationControls={true}
+            showNavInfo={false}
           />
         )}
 
         {/* Hover tooltip */}
         {hoveredNode && !hoveredNode.isTag && !hoveredNode.isFolder && (
-          <div className="absolute bottom-4 left-4 p-4 bg-card border border-border rounded-xl shadow-lg max-w-xs animate-fade-in">
+          <div className="absolute bottom-4 left-4 p-4 glass-strong rounded-xl shadow-2xl max-w-xs animate-fade-in futuristic-border">
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary" className="uppercase text-xs">
+              <Badge 
+                variant="secondary" 
+                className="uppercase text-xs"
+                style={{ backgroundColor: `${typeColors[hoveredNode.type]}20`, color: typeColors[hoveredNode.type] }}
+              >
                 {hoveredNode.type}
               </Badge>
               {hoveredNode.starred && (
-                <Badge variant="outline" className="text-xs">★ Starred</Badge>
+                <Badge variant="outline" className="text-xs text-yellow-500 border-yellow-500/50">★ Starred</Badge>
               )}
             </div>
             <h3 className="font-medium line-clamp-2">{hoveredNode.name}</h3>
@@ -407,50 +450,50 @@ const KnowledgeGraph: React.FC = () => {
         )}
 
         {/* Legend */}
-        <div className="absolute top-4 right-4 p-4 bg-card/90 backdrop-blur border border-border rounded-xl">
-          <h4 className="font-medium text-sm mb-3">Legend</h4>
+        <div className="absolute top-4 right-4 p-4 glass-strong rounded-xl futuristic-border">
+          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Legend
+          </h4>
           <div className="space-y-2">
-            {Object.entries(typeColors).slice(0, 7).map(([type, color]) => {
-              const Icon = typeIcons[type];
-              return (
-                <div key={type} className="flex items-center gap-2 text-xs">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="capitalize">{type}</span>
-                </div>
-              );
-            })}
-            <div className="border-t border-border pt-2 mt-2">
+            {Object.entries(typeColors).slice(0, 7).map(([type, color]) => (
+              <div key={type} className="flex items-center gap-2 text-xs">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}50` }}
+                />
+                <span className="capitalize">{type}</span>
+              </div>
+            ))}
+            <div className="border-t border-border/50 pt-2 mt-2">
               <div className="flex items-center gap-2 text-xs">
                 <div 
                   className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: typeColors.tag }}
+                  style={{ backgroundColor: typeColors.tag, boxShadow: `0 0 8px ${typeColors.tag}50` }}
                 />
                 <span>#Tags</span>
               </div>
               <div className="flex items-center gap-2 text-xs mt-1">
                 <div 
                   className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: typeColors.folder }}
+                  style={{ backgroundColor: typeColors.folder, boxShadow: `0 0 8px ${typeColors.folder}50` }}
                 />
                 <span>📁 Folders</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-1">
+                <div 
+                  className="w-8 h-0.5 rounded" 
+                  style={{ backgroundColor: '#8B5CF6' }}
+                />
+                <span>Similar</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Link distance slider */}
-        <div className="absolute bottom-4 right-4 p-4 bg-card/90 backdrop-blur border border-border rounded-xl w-48">
-          <h4 className="font-medium text-sm mb-3">Link Distance</h4>
-          <Slider
-            value={linkDistance}
-            onValueChange={setLinkDistance}
-            min={30}
-            max={200}
-            step={10}
-          />
+        {/* Controls hint */}
+        <div className="absolute bottom-4 right-4 p-3 glass rounded-lg text-xs text-muted-foreground">
+          <p>🖱️ Drag to rotate • Scroll to zoom • Click node to view</p>
         </div>
       </div>
     </div>

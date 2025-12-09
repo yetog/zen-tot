@@ -16,7 +16,6 @@ import KnowledgeGraph from "./pages/KnowledgeGraph";
 import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import logo from "@/assets/logo.png";
 
 const queryClient = new QueryClient();
@@ -37,12 +36,9 @@ const App = () => (
                     <div className="flex items-center gap-4">
                       <SidebarTrigger className="-ml-1 transition-transform hover:scale-105" />
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="hidden sm:flex items-center gap-2">
-                        <img src={logo} alt="Zen TOT" className="w-8 h-8 rounded-lg transition-transform hover:scale-105" />
-                        <span className="text-lg font-bold">Zen <span className="text-primary">TOT</span></span>
-                      </div>
-                      <ThemeToggle />
+                    <div className="flex items-center gap-3">
+                      <img src={logo} alt="Zen TOT" className="w-8 h-8 rounded-lg transition-transform hover:scale-105 shadow-lg shadow-primary/20" />
+                      <span className="text-lg font-bold hidden sm:inline">Zen <span className="text-primary">TOT</span></span>
                     </div>
                   </header>
 
