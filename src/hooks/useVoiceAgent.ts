@@ -21,6 +21,7 @@ export const useVoiceAgent = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
+  const [agentContext, setAgentContext] = useState<VoiceAgentOptions | null>(null);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -82,45 +83,21 @@ export const useVoiceAgent = () => {
 
     try {
       setError(null);
-      console.log('Starting voice agent with context...');
+      setAgentContext(options || null);
+      console.log('Starting voice agent...');
 
       // Request microphone permission
       const hasPermission = await requestMicrophonePermission();
       if (!hasPermission) return;
 
-      // Build context-aware system prompt
-      const agentName = options?.agentName || 'Zen';
-      const notesContext = options?.notesContext || '';
+      // Start ElevenLabs conversation with public agent ID
+      // Note: For public agents, we use agentId directly
+      // Overrides should be configured in the ElevenLabs dashboard
+      console.log('Starting ElevenLabs conversation with agent:', ELEVENLABS_AGENT_ID);
       
-      const systemPrompt = `You are ${agentName}, a friendly and insightful AI consultant for the Zen TOT app. 
-You help users understand and work with their notes, find patterns, and extract insights.
-You have a warm, encouraging personality and speak in a clear, helpful manner.
-
-${notesContext ? `Here is context from the user's notes that you can reference:
-${notesContext}
-
-Use this context to provide personalized, relevant responses. Reference specific notes when helpful.` : 'The user has not loaded any notes yet.'}
-
-Be concise but helpful. Ask clarifying questions when needed.`;
-
-      const firstMessage = notesContext 
-        ? `Hi! I'm ${agentName}, your notes consultant. I've reviewed your notes and I'm ready to help you explore them. What would you like to know?`
-        : `Hi! I'm ${agentName}. I'm here to help you with your notes. What can I assist you with today?`;
-
-      // Start ElevenLabs conversation with public agent (no API key needed for public agents)
-      console.log('Starting ElevenLabs conversation...');
-      await conversation.startSession({ 
-        agentId: ELEVENLABS_AGENT_ID,
-        overrides: {
-          agent: {
-            prompt: {
-              prompt: systemPrompt
-            },
-            firstMessage: firstMessage,
-            language: 'en'
-          }
-        }
-      });
+      await conversation.startSession({
+        agentId: ELEVENLABS_AGENT_ID
+      } as any); // Type assertion needed due to SDK type definitions
       
     } catch (err) {
       console.error('Failed to start voice agent:', err);
@@ -135,6 +112,7 @@ Be concise but helpful. Ask clarifying questions when needed.`;
     if (conversation) {
       await conversation.endSession();
       setTranscript([]);
+      setAgentContext(null);
     }
   }, [conversation]);
 
@@ -154,6 +132,7 @@ Be concise but helpful. Ask clarifying questions when needed.`;
     error,
     transcript,
     status: conversation.status,
-    isConfigured
+    isConfigured,
+    agentContext
   };
 };
