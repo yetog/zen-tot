@@ -23,6 +23,7 @@ export interface Note {
   // AI outputs
   summary?: string;
   actionItems?: string[];
+  chatInsights?: string[];
   
   // Organization
   folderId?: string;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, Trash2, Share, Download, FileText, Loader2, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,8 +41,7 @@ const NoteDetail: React.FC = () => {
   };
 
   const handleSaveAIOutput = (type: string, content: string) => {
-    // Save AI-generated content to the note
-    const updates: any = {};
+    const updates: Record<string, any> = {};
     if (type === 'summary') {
       updates.summary = content;
     } else if (type === 'actions') {
@@ -51,7 +50,46 @@ const NoteDetail: React.FC = () => {
     
     if (Object.keys(updates).length > 0) {
       updateNote(note.id, updates);
+      toast.success('Saved to note');
     }
+  };
+
+  const handleSaveChatInsight = (content: string) => {
+    const currentInsights = note.chatInsights || [];
+    updateNote(note.id, {
+      chatInsights: [...currentInsights, content]
+    });
+  };
+
+  const handleExportMarkdown = () => {
+    const content = `# ${note.title}
+
+**Type:** ${note.type}
+**Created:** ${new Date(note.createdAt).toLocaleDateString()}
+
+---
+
+## Content
+
+${note.transcript || note.extractedText || 'No content available'}
+
+${note.summary ? `## Summary\n\n${note.summary}\n` : ''}
+
+${note.actionItems?.length ? `## Action Items\n\n${note.actionItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}\n` : ''}
+
+${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map((insight, i) => `- ${insight}`).join('\n\n')}\n` : ''}
+`;
+
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Note exported as Markdown');
   };
 
   const noteContent = note.transcript || note.extractedText || '';
@@ -72,7 +110,7 @@ const NoteDetail: React.FC = () => {
           <Button variant="ghost" size="icon">
             <Share className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={handleExportMarkdown}>
             <Download className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleDelete}>
@@ -171,6 +209,23 @@ const NoteDetail: React.FC = () => {
                       </p>
                     )}
                   </div>
+
+                  {/* Chat Insights */}
+                  {note.chatInsights && note.chatInsights.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4 text-primary" />
+                        Saved Insights
+                      </h4>
+                      <div className="space-y-2">
+                        {note.chatInsights.map((insight, i) => (
+                          <div key={i} className="p-3 rounded-lg bg-muted text-sm">
+                            {insight}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="templates" className="m-0">
@@ -181,7 +236,11 @@ const NoteDetail: React.FC = () => {
                 </TabsContent>
 
                 <TabsContent value="chat" className="m-0">
-                  <NoteChat noteContent={noteContent} noteTitle={note.title} />
+                  <NoteChat 
+                    noteContent={noteContent} 
+                    noteTitle={note.title}
+                    onSaveInsight={handleSaveChatInsight}
+                  />
                 </TabsContent>
               </div>
             </Tabs>

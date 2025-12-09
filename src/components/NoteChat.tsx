@@ -1,23 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Save, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { chatAboutNote } from '@/services/noteAIService';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  saved?: boolean;
 }
 
 interface NoteChatProps {
   noteContent: string;
   noteTitle: string;
   className?: string;
+  onSaveInsight?: (content: string) => void;
 }
 
-const NoteChat: React.FC<NoteChatProps> = ({ noteContent, noteTitle, className }) => {
+const NoteChat: React.FC<NoteChatProps> = ({ noteContent, noteTitle, className, onSaveInsight }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +65,17 @@ const NoteChat: React.FC<NoteChatProps> = ({ noteContent, noteTitle, className }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleSaveToNote = (index: number) => {
+    const message = messages[index];
+    if (message.role === 'assistant' && onSaveInsight) {
+      onSaveInsight(message.content);
+      setMessages(prev => prev.map((m, i) => 
+        i === index ? { ...m, saved: true } : m
+      ));
+      toast.success('Insight saved to note');
     }
   };
 
@@ -116,15 +130,38 @@ const NoteChat: React.FC<NoteChatProps> = ({ noteContent, noteTitle, className }
                     <Bot className="h-4 w-4 text-primary" />
                   </div>
                 )}
-                <div
-                  className={cn(
-                    'max-w-[80%] rounded-xl px-4 py-2',
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                <div className="flex flex-col gap-1 max-w-[80%]">
+                  <div
+                    className={cn(
+                      'rounded-xl px-4 py-2',
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    )}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                  {message.role === 'assistant' && onSaveInsight && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="self-start h-7 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => handleSaveToNote(index)}
+                      disabled={message.saved}
+                    >
+                      {message.saved ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1" />
+                          Saved
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-3 w-3 mr-1" />
+                          Save to Note
+                        </>
+                      )}
+                    </Button>
                   )}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
                 {message.role === 'user' && (
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
