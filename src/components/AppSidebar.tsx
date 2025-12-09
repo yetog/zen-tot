@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, FolderOpen, Tags, Bot, Settings } from "lucide-react";
+import { Home, FolderOpen, Tags, Bot, Settings, Brain } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,7 @@ export function AppSidebar() {
     { title: "All Notes", url: "/", icon: Home },
     { title: "Folders", url: "/folders", icon: FolderOpen },
     { title: "Tags", url: "/tags", icon: Tags },
+    { title: "Knowledge Graph", url: "/knowledge-graph", icon: Brain },
     { title: "Assistant", url: "/assistant", icon: Bot },
     { title: "Settings", url: "/settings", icon: Settings },
   ];

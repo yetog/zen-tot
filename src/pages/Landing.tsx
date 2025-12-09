@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Mic, 
@@ -11,21 +11,30 @@ import {
   Check,
   Brain,
   Zap,
-  Lock
+  Lock,
+  Network,
+  Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/logo.png';
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const features = [
     { icon: Mic, title: 'Audio & Voice', description: 'Record meetings, lectures, or voice memos. Get instant transcriptions.' },
     { icon: FileText, title: 'PDFs & Documents', description: 'Upload PDFs and extract text automatically for AI analysis.' },
     { icon: Youtube, title: 'YouTube Videos', description: 'Paste any YouTube URL and capture video insights.' },
     { icon: Globe, title: 'Web Pages', description: 'Save articles and web content with smart extraction.' },
-    { icon: MessageSquare, title: 'AI Chat', description: 'Ask questions about your notes. Get intelligent answers.' },
-    { icon: Sparkles, title: 'AI Templates', description: 'Generate summaries, action items, emails, and quizzes.' },
+    { icon: Network, title: 'Knowledge Graph', description: 'Visualize connections between ideas with neural network views.' },
+    { icon: Bot, title: 'Voice Assistant', description: 'Talk to your notes with an AI that understands your content.' },
   ];
 
   const steps = [
@@ -64,14 +73,53 @@ const Landing: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden min-h-[90vh] flex items-center">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.15),transparent_50%)]" />
         
+        {/* Floating animated icons */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div 
+            className="absolute top-20 left-[10%] opacity-20"
+            style={{ transform: `translateY(${scrollY * 0.1}px)` }}
+          >
+            <FileText className="h-16 w-16 text-primary animate-bounce" style={{ animationDuration: '3s' }} />
+          </div>
+          <div 
+            className="absolute top-40 right-[15%] opacity-20"
+            style={{ transform: `translateY(${scrollY * 0.15}px)` }}
+          >
+            <Youtube className="h-12 w-12 text-primary animate-bounce" style={{ animationDuration: '4s', animationDelay: '0.5s' }} />
+          </div>
+          <div 
+            className="absolute bottom-40 left-[20%] opacity-20"
+            style={{ transform: `translateY(${-scrollY * 0.1}px)` }}
+          >
+            <Mic className="h-14 w-14 text-primary animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '1s' }} />
+          </div>
+          <div 
+            className="absolute bottom-60 right-[25%] opacity-20"
+            style={{ transform: `translateY(${-scrollY * 0.08}px)` }}
+          >
+            <Brain className="h-20 w-20 text-primary animate-pulse" style={{ animationDuration: '2s' }} />
+          </div>
+          <div 
+            className="absolute top-[60%] left-[5%] opacity-15"
+            style={{ transform: `translateY(${scrollY * 0.05}px)` }}
+          >
+            <Network className="h-24 w-24 text-primary animate-spin" style={{ animationDuration: '20s' }} />
+          </div>
+        </div>
+        
         <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-32">
           <div className="flex items-center justify-center gap-3 mb-8 animate-fade-in">
-            <img src={logo} alt="Zen TOT" className="w-16 h-16 rounded-2xl shadow-lg shadow-primary/20" />
-            <h1 className="text-4xl font-bold">
+            <img 
+              src={logo} 
+              alt="Zen TOT" 
+              className="w-20 h-20 rounded-2xl shadow-xl shadow-primary/30 animate-pulse"
+              style={{ animationDuration: '3s' }}
+            />
+            <h1 className="text-5xl font-bold">
               Zen <span className="text-primary">TOT</span>
             </h1>
           </div>
@@ -79,21 +127,50 @@ const Landing: React.FC = () => {
           <div className="text-center max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: '100ms' }}>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               AI Note Taker for Your{' '}
-              <span className="gradient-text">Train of Thought</span>
+              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">
+                Train of Thought
+              </span>
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Capture anything — meetings, PDFs, YouTube, web pages. 
               Let AI transcribe, summarize, and help you find insights instantly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => navigate('/')} className="text-lg px-8 hover-lift">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/')} 
+                className="text-lg px-8 hover-lift shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40"
+              >
                 Start Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 hover-lift">
+              <Button size="lg" variant="outline" className="text-lg px-8 hover-lift backdrop-blur">
                 Watch Demo
               </Button>
             </div>
+            
+            {/* Stats */}
+            <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+              <div className="text-center animate-fade-in" style={{ animationDelay: '300ms' }}>
+                <div className="text-3xl font-bold text-primary">∞</div>
+                <div className="text-sm text-muted-foreground">Note Types</div>
+              </div>
+              <div className="text-center animate-fade-in" style={{ animationDelay: '400ms' }}>
+                <div className="text-3xl font-bold text-primary">AI</div>
+                <div className="text-sm text-muted-foreground">Powered</div>
+              </div>
+              <div className="text-center animate-fade-in" style={{ animationDelay: '500ms' }}>
+                <div className="text-3xl font-bold text-primary">100%</div>
+                <div className="text-sm text-muted-foreground">Privacy</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-2">
+            <div className="w-1.5 h-3 rounded-full bg-primary animate-pulse" />
           </div>
         </div>
       </section>

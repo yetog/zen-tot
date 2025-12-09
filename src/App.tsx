@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import Folders from "./pages/Folders";
 import Tags from "./pages/Tags";
 import Landing from "./pages/Landing";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
 import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -53,6 +54,7 @@ const App = () => (
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/folders" element={<Folders />} />
                       <Route path="/tags" element={<Tags />} />
+                      <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
                       <Route path="/landing" element={<Landing />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
