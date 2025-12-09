@@ -23,6 +23,10 @@ export interface Note {
   // AI outputs
   summary?: string;
   actionItems?: string[];
+  bulletedNotes?: string;
+  meetingMinutes?: string;
+  followUpEmail?: string;
+  quizContent?: string;
   chatInsights?: string[];
   
   // Organization
