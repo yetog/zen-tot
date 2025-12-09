@@ -36,18 +36,25 @@ Content:
 
 Bulleted Notes:`,
 
-  actionItems: `You are a task extraction assistant. Extract all action items, tasks, and to-dos from the following content. Format each as a clear, actionable item with owner if mentioned.
+  actionItems: `You are a strategic execution planner. Based on the following content, create a comprehensive execution plan with:
+- Clear objectives and goals
+- Prioritized action items with deadlines
+- Key milestones and success metrics
+- Resource requirements
+- Risk mitigation strategies
+Format each action as specific, measurable, and assignable.
 
 Content:
 {content}
 
-Action Items:`,
+Execution Plan:`,
 
-  followUpEmail: `You are a professional email writer. Based on the following content, draft a professional follow-up email that:
-- Summarizes key points discussed
-- Lists any agreed-upon action items
-- Sets expectations for next steps
+  followUpEmail: `You are a professional email writer. Based on the analysis of the following content, draft a professional follow-up email that:
+- Summarizes key insights and findings from the analysis
+- Lists agreed-upon action items and next steps
+- Sets clear expectations and timelines
 - Maintains a professional but friendly tone
+- Includes a clear call to action
 
 Content:
 {content}
@@ -60,6 +67,19 @@ Content:
 {content}
 
 Quiz Questions:`,
+
+  analysis: `You are an expert analyst. Provide a comprehensive, in-depth analysis of the following content. Include:
+- **Key Themes**: Main topics and patterns identified
+- **Critical Insights**: Important findings and observations
+- **Strengths & Opportunities**: What works well and areas for growth
+- **Potential Challenges**: Risks or issues to be aware of
+- **Strategic Recommendations**: Actionable suggestions based on the analysis
+Be thorough but concise, using clear headings and bullet points.
+
+Content:
+{content}
+
+Analysis:`,
 };
 
 /**
@@ -102,6 +122,13 @@ export async function generateFollowUpEmail(content: string): Promise<AITemplate
  */
 export async function generateQuiz(content: string): Promise<AITemplateResult> {
   return generateFromTemplate('quiz', content);
+}
+
+/**
+ * Generate deep analysis of the note content
+ */
+export async function generateAnalysis(content: string): Promise<AITemplateResult> {
+  return generateFromTemplate('analysis', content);
 }
 
 /**

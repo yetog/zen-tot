@@ -23,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -349,246 +350,248 @@ export const NewNoteModal: React.FC<NewNoteModalProps> = ({ open, onOpenChange }
     if (!selectedOption) return null;
 
     return (
-      <div className="space-y-4 animate-fade-in">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleBack}
-          className="mb-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+      <ScrollArea className="h-[calc(85vh-120px)]">
+        <div className="space-y-4 animate-fade-in pr-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleBack}
+            className="mb-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
 
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary">
-          <selectedOption.icon className="h-6 w-6 text-primary" />
-          <div>
-            <p className="font-medium">{selectedOption.label}</p>
-            <p className="text-sm text-muted-foreground">{selectedOption.description}</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Title</label>
-            <Input
-              placeholder="Note title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Text input */}
-          {selectedOption.id === 'text' && (
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary">
+            <selectedOption.icon className="h-6 w-6 text-primary" />
             <div>
-              <label className="text-sm font-medium mb-2 block">Content</label>
-              <Textarea
-                placeholder="Write or paste your text here..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={8}
-                className="resize-none"
+              <p className="font-medium">{selectedOption.label}</p>
+              <p className="text-sm text-muted-foreground">{selectedOption.description}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Title</label>
+              <Input
+                placeholder="Note title..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
             </div>
-          )}
 
-          {/* YouTube input */}
-          {selectedOption.id === 'youtube' && (
-            <div className="space-y-4">
+            {/* Text input */}
+            {selectedOption.id === 'text' && (
               <div>
-                <label className="text-sm font-medium mb-2 block">YouTube URL</label>
-                <Input
-                  placeholder="https://youtube.com/watch?v=..."
-                  value={url}
-                  onChange={(e) => handleYouTubeUrl(e.target.value)}
+                <label className="text-sm font-medium mb-2 block">Content</label>
+                <Textarea
+                  placeholder="Write or paste your text here..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={8}
+                  className="resize-none"
                 />
               </div>
-              {isProcessing && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Fetching video metadata...
-                </div>
-              )}
-              {youtubeData?.thumbnail && (
-                <div className="rounded-lg overflow-hidden">
-                  <img src={youtubeData.thumbnail} alt="Video thumbnail" className="w-full" />
-                  {youtubeData.author && (
-                    <p className="text-sm text-muted-foreground mt-2">By {youtubeData.author}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Web URL input */}
-          {selectedOption.id === 'web' && (
-            <div>
-              <label className="text-sm font-medium mb-2 block">URL</label>
-              <Input
-                placeholder="https://..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* PDF upload */}
-          {selectedOption.id === 'pdf' && (
-            <div 
-              {...getPDFRootProps()} 
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isPDFDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <input {...getPDFInputProps()} />
-              {isProcessing ? (
-                <div className="flex flex-col items-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                  <p className="text-sm text-muted-foreground">Extracting text...</p>
-                </div>
-              ) : uploadedFile ? (
-                <div className="flex flex-col items-center">
-                  <FileText className="h-8 w-8 text-primary mb-2" />
-                  <p className="font-medium">{uploadedFile.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {extractedText ? `${extractedText.length} characters extracted` : 'Processing...'}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop or click to upload PDF
-                  </p>
-                  <Button variant="secondary" size="sm" type="button">
-                    Choose File
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Audio file upload */}
-          {selectedOption.id === 'audio' && (
-            <div 
-              {...getAudioRootProps()} 
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isAudioDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <input {...getAudioInputProps()} />
-              {uploadedFile ? (
-                <div className="flex flex-col items-center">
-                  <Music className="h-8 w-8 text-primary mb-2" />
-                  <p className="font-medium">{uploadedFile.name}</p>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop or click to upload audio
-                  </p>
-                  <Button variant="secondary" size="sm" type="button">
-                    Choose File
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Image upload */}
-          {(selectedOption.id === 'image' || selectedOption.id === 'camera') && (
-            <div 
-              {...getImageRootProps()} 
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isImageDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <input {...getImageInputProps()} />
-              {uploadedFile ? (
-                <div className="flex flex-col items-center">
-                  <Image className="h-8 w-8 text-primary mb-2" />
-                  <p className="font-medium">{uploadedFile.name}</p>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop or click to upload image
-                  </p>
-                  <Button variant="secondary" size="sm" type="button">
-                    Choose File
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Audio recording */}
-          {selectedOption.id === 'record' && (
-            <div className="space-y-4">
-              <div className="text-center p-6 rounded-lg bg-secondary/50">
-                <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 transition-all ${
-                  isRecording ? 'bg-destructive/20 animate-pulse' : 'bg-primary/20'
-                }`}>
-                  <Mic className={`h-10 w-10 ${isRecording ? 'text-destructive' : 'text-primary'}`} />
-                </div>
-                
-                <p className="text-2xl font-mono mb-4">{formatTime(recordingTime)}</p>
-                
-                <div className="flex justify-center gap-3">
-                  {!isRecording && !audioBlob && (
-                    <Button onClick={startRecording}>
-                      <Mic className="h-4 w-4 mr-2" />
-                      Start Recording
-                    </Button>
-                  )}
-                  {isRecording && (
-                    <>
-                      <Button variant="outline" onClick={togglePause}>
-                        {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                      </Button>
-                      <Button variant="destructive" onClick={stopRecording}>
-                        <Square className="h-4 w-4 mr-2" />
-                        Stop
-                      </Button>
-                    </>
-                  )}
-                  {audioBlob && !isRecording && (
-                    <Button variant="outline" onClick={() => { setAudioBlob(null); setTranscript(''); setRecordingTime(0); }}>
-                      Record Again
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {(transcript || audioBlob) && (
-                <div className="rounded-lg bg-muted p-4">
-                  <h4 className="text-sm font-medium mb-2">Live Transcript</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {transcript || 'Transcript will appear here...'}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <Button 
-            onClick={handleSubmit} 
-            className="w-full"
-            disabled={isSubmitting || !canSubmit()}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Note'
             )}
-          </Button>
+
+            {/* YouTube input */}
+            {selectedOption.id === 'youtube' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">YouTube URL</label>
+                  <Input
+                    placeholder="https://youtube.com/watch?v=..."
+                    value={url}
+                    onChange={(e) => handleYouTubeUrl(e.target.value)}
+                  />
+                </div>
+                {isProcessing && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Fetching video metadata...
+                  </div>
+                )}
+                {youtubeData?.thumbnail && (
+                  <div className="rounded-lg overflow-hidden">
+                    <img src={youtubeData.thumbnail} alt="Video thumbnail" className="w-full" />
+                    {youtubeData.author && (
+                      <p className="text-sm text-muted-foreground mt-2">By {youtubeData.author}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Web URL input */}
+            {selectedOption.id === 'web' && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">URL</label>
+                <Input
+                  placeholder="https://..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* PDF upload */}
+            {selectedOption.id === 'pdf' && (
+              <div 
+                {...getPDFRootProps()} 
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isPDFDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <input {...getPDFInputProps()} />
+                {isProcessing ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <p className="text-sm text-muted-foreground">Extracting text...</p>
+                  </div>
+                ) : uploadedFile ? (
+                  <div className="flex flex-col items-center">
+                    <FileText className="h-8 w-8 text-primary mb-2" />
+                    <p className="font-medium">{uploadedFile.name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {extractedText ? `${extractedText.length} characters extracted` : 'Processing...'}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag and drop or click to upload PDF
+                    </p>
+                    <Button variant="secondary" size="sm" type="button">
+                      Choose File
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Audio file upload */}
+            {selectedOption.id === 'audio' && (
+              <div 
+                {...getAudioRootProps()} 
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isAudioDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <input {...getAudioInputProps()} />
+                {uploadedFile ? (
+                  <div className="flex flex-col items-center">
+                    <Music className="h-8 w-8 text-primary mb-2" />
+                    <p className="font-medium">{uploadedFile.name}</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag and drop or click to upload audio
+                    </p>
+                    <Button variant="secondary" size="sm" type="button">
+                      Choose File
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Image upload */}
+            {(selectedOption.id === 'image' || selectedOption.id === 'camera') && (
+              <div 
+                {...getImageRootProps()} 
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isImageDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <input {...getImageInputProps()} />
+                {uploadedFile ? (
+                  <div className="flex flex-col items-center">
+                    <Image className="h-8 w-8 text-primary mb-2" />
+                    <p className="font-medium">{uploadedFile.name}</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag and drop or click to upload image
+                    </p>
+                    <Button variant="secondary" size="sm" type="button">
+                      Choose File
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Audio recording */}
+            {selectedOption.id === 'record' && (
+              <div className="space-y-4">
+                <div className="text-center p-6 rounded-lg bg-secondary/50">
+                  <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 transition-all ${
+                    isRecording ? 'bg-destructive/20 animate-pulse' : 'bg-primary/20'
+                  }`}>
+                    <Mic className={`h-10 w-10 ${isRecording ? 'text-destructive' : 'text-primary'}`} />
+                  </div>
+                  
+                  <p className="text-2xl font-mono mb-4">{formatTime(recordingTime)}</p>
+                  
+                  <div className="flex justify-center gap-3">
+                    {!isRecording && !audioBlob && (
+                      <Button onClick={startRecording}>
+                        <Mic className="h-4 w-4 mr-2" />
+                        Start Recording
+                      </Button>
+                    )}
+                    {isRecording && (
+                      <>
+                        <Button variant="outline" onClick={togglePause}>
+                          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="destructive" onClick={stopRecording}>
+                          <Square className="h-4 w-4 mr-2" />
+                          Stop
+                        </Button>
+                      </>
+                    )}
+                    {audioBlob && !isRecording && (
+                      <Button variant="outline" onClick={() => { setAudioBlob(null); setTranscript(''); setRecordingTime(0); }}>
+                        Record Again
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {(transcript || audioBlob) && (
+                  <div className="rounded-lg bg-muted p-4">
+                    <h4 className="text-sm font-medium mb-2">Live Transcript</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {transcript || 'Transcript will appear here...'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Button 
+              onClick={handleSubmit} 
+              className="w-full"
+              disabled={isSubmitting || !canSubmit()}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Note'
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
+      </ScrollArea>
     );
   };
 
