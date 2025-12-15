@@ -13,7 +13,7 @@ import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import ZenAvatar2D from '@/components/ZenAvatar2D';
 import VoiceContextPreview from '@/components/VoiceContextPreview';
-
+import VoiceTranscriptMessage from '@/components/VoiceTranscriptMessage';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -362,30 +362,12 @@ Be helpful, concise, and reference specific notes when relevant.`;
             {/* Show voice transcript when in voice mode */}
             {voiceMode && transcript.length > 0 ? (
               transcript.map((msg, idx) => (
-                <div
+                <VoiceTranscriptMessage
                   key={idx}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-                >
-                  {msg.role === 'agent' && (
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 glow-primary">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                    </div>
-                  )}
-                  <div
-                    className={`p-4 rounded-2xl max-w-[80%] ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'glass-strong'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
-                  </div>
-                  {msg.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                      <User className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  )}
-                </div>
+                  role={msg.role}
+                  text={msg.text}
+                  timestamp={msg.timestamp}
+                />
               ))
             ) : messages.length > 0 ? (
               messages.map((message) => (

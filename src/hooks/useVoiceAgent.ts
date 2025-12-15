@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 interface TranscriptMessage {
   role: 'user' | 'agent';
   text: string;
+  timestamp: Date;
 }
 
 interface VoiceAgentOptions {
@@ -45,11 +46,11 @@ export const useVoiceAgent = () => {
     onMessage: (message) => {
       if (typeof message === 'string') {
         console.log('Agent message:', message);
-        setTranscript(prev => [...prev, { role: 'agent', text: message }]);
+        setTranscript(prev => [...prev, { role: 'agent', text: message, timestamp: new Date() }]);
       } else if (message && typeof message === 'object' && 'message' in message) {
         const role = 'source' in message && message.source === 'user' ? 'user' : 'agent';
         console.log(`${role} message:`, message.message);
-        setTranscript(prev => [...prev, { role, text: message.message as string }]);
+        setTranscript(prev => [...prev, { role, text: message.message as string, timestamp: new Date() }]);
       }
     }
   });

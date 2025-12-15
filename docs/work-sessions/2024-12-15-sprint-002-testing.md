@@ -9,6 +9,7 @@ Implementing Sprint 002 focused on voice agent testing infrastructure, UI improv
 - [x] Enhanced voice status indicators
 - [x] Added context badge in header during voice sessions
 - [x] Improved transcript display with timestamps
+- [x] Created VoiceTranscriptMessage component with better styling
 - [x] Created sprint documentation
 
 ## Files Modified
@@ -16,8 +17,10 @@ Implementing Sprint 002 focused on voice agent testing infrastructure, UI improv
 |------|---------|
 | `src/data/demoNotes.ts` | New file with 5 sample notes for testing |
 | `src/components/VoiceContextPreview.tsx` | New modal component for voice session preview |
+| `src/components/VoiceTranscriptMessage.tsx` | New component for styled transcript messages with timestamps |
+| `src/hooks/useVoiceAgent.ts` | Added timestamp to TranscriptMessage interface |
 | `src/pages/Settings.tsx` | Added "Load Demo Notes" button |
-| `src/pages/Assistant.tsx` | Added context preview, improved status indicators |
+| `src/pages/Assistant.tsx` | Added context preview, improved status indicators, uses VoiceTranscriptMessage |
 
 ## Technical Details
 
@@ -35,6 +38,14 @@ Modal that shows before starting voice session:
 - Shows preview of context being sent
 - Lists what the agent can help with
 - Confirm/Cancel buttons
+
+### VoiceTranscriptMessage Component
+New component for displaying voice transcript messages:
+- Timestamps using date-fns formatDistanceToNow
+- Distinct styling for user (primary bg, right-aligned) vs agent (glass, left-aligned)
+- Subtle rounded corners (br-sm for user, bl-sm for agent)
+- Smooth fade-in animation
+- Compact timestamp display
 
 ### Enhanced Voice Status
 - Added "Live" badge when voice connected
