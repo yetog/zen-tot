@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNotes } from "@/contexts/NotesContext";
 import { toast } from "sonner";
+import { demoNotes, generateDemoNoteId } from "@/data/demoNotes";
 import { 
   Settings as SettingsIcon, 
   Mic, 
@@ -16,14 +17,39 @@ import {
   Trash2, 
   Check, 
   Lightbulb,
-  Volume2
+  Volume2,
+  Upload
 } from "lucide-react";
 
 export default function Settings() {
-  const { notes, clearAllNotes } = useNotes();
+  const { notes, clearAllNotes, addNote } = useNotes();
   const [voiceSpeed, setVoiceSpeed] = useState("1.0");
   const [autoTranscribe, setAutoTranscribe] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+
+  const handleLoadDemoNotes = async () => {
+    setIsLoadingDemo(true);
+    try {
+      for (const demoNote of demoNotes) {
+        await addNote(demoNote.type, demoNote.title, {
+          transcript: demoNote.transcript,
+          extractedText: demoNote.extractedText,
+          summary: demoNote.summary,
+          actionItems: demoNote.actionItems,
+          starred: demoNote.starred,
+          status: demoNote.status,
+          sourceUrl: demoNote.sourceUrl,
+        });
+      }
+      toast.success(`Loaded ${demoNotes.length} demo notes for testing!`);
+    } catch (error) {
+      console.error('Failed to load demo notes:', error);
+      toast.error('Failed to load demo notes');
+    } finally {
+      setIsLoadingDemo(false);
+    }
+  };
   
   const handleExportAll = () => {
     const exportData = {
@@ -247,6 +273,25 @@ export default function Settings() {
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete All Notes
                   </Button>
+                </div>
+
+                {/* Demo Notes Loader */}
+                <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Load Demo Notes</p>
+                      <p className="text-sm text-muted-foreground">Add sample notes to test voice agent & features</p>
+                    </div>
+                    <Button 
+                      onClick={handleLoadDemoNotes} 
+                      variant="outline" 
+                      className="hover-glow"
+                      disabled={isLoadingDemo}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {isLoadingDemo ? 'Loading...' : 'Load Demo'}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="text-xs text-muted-foreground p-3 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">

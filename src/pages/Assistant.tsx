@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Filter, User, Loader2, Volume2, VolumeX, Mic, MicOff, MessageSquare } from 'lucide-react';
+import { Send, Sparkles, Filter, User, Loader2, Volume2, VolumeX, Mic, MicOff, MessageSquare, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import ZenAvatar2D from '@/components/ZenAvatar2D';
+import VoiceContextPreview from '@/components/VoiceContextPreview';
 
 interface Message {
   id: string;
@@ -36,6 +37,7 @@ const Assistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
+  const [showVoicePreview, setShowVoicePreview] = useState(false);
   const [filter, setFilter] = useState<ContextFilter>({
     useAllNotes: true,
     types: [],
@@ -109,18 +111,25 @@ Content: ${content.slice(0, 800)}${content.length > 800 ? '...' : ''}`;
       playDisconnect();
       toast.success('Voice mode disabled');
     } else {
-      try {
-        const notesContext = buildContext();
-        await startVoiceAgent({ 
-          notesContext, 
-          agentName: AGENT_NAME 
-        });
-        setVoiceMode(true);
-        playConnect();
-        toast.success(`${AGENT_NAME} is listening!`);
-      } catch (err) {
-        toast.error('Failed to start voice mode');
-      }
+      // Show preview modal first
+      setShowVoicePreview(true);
+    }
+  };
+
+  // Start voice session after preview confirmation
+  const handleStartVoiceSession = async () => {
+    setShowVoicePreview(false);
+    try {
+      const notesContext = buildContext();
+      await startVoiceAgent({ 
+        notesContext, 
+        agentName: AGENT_NAME 
+      });
+      setVoiceMode(true);
+      playConnect();
+      toast.success(`${AGENT_NAME} is listening!`);
+    } catch (err) {
+      toast.error('Failed to start voice mode');
     }
   };
 
@@ -210,9 +219,15 @@ Be helpful, concise, and reference specific notes when relevant.`;
                 {filteredNotesCount} Notes
               </Badge>
               {voiceConnected && (
-                <Badge variant="default" className="bg-green-500/20 text-green-400 animate-pulse">
-                  Live
-                </Badge>
+                <>
+                  <Badge variant="default" className="bg-green-500/20 text-green-400 animate-pulse">
+                    Live
+                  </Badge>
+                  <Badge variant="outline" className="border-primary/30 text-primary">
+                    <FileText className="h-3 w-3 mr-1" />
+                    Context: {filteredNotesCount}
+                  </Badge>
+                </>
               )}
             </div>
           </div>
@@ -513,6 +528,16 @@ Be helpful, concise, and reference specific notes when relevant.`;
           </Button>
         </div>
       </div>
+
+      {/* Voice Context Preview Modal */}
+      <VoiceContextPreview
+        open={showVoicePreview}
+        onOpenChange={setShowVoicePreview}
+        notesCount={filteredNotesCount}
+        contextPreview={buildContext().slice(0, 500) + (buildContext().length > 500 ? '...' : '')}
+        onConfirm={handleStartVoiceSession}
+        agentName={AGENT_NAME}
+      />
     </div>
   );
 };
