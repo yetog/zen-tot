@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useNotes } from "@/contexts/NotesContext";
 import { toast } from "sonner";
 import { demoNotes, generateDemoNoteId } from "@/data/demoNotes";
+import { SystemStatus } from "@/components/SystemStatus";
 import { 
   Settings as SettingsIcon, 
   Mic, 
@@ -195,6 +196,9 @@ export default function Settings() {
 
         {/* AI Settings */}
         <TabsContent value="ai" className="space-y-4">
+          {/* System Status Card */}
+          <SystemStatus />
+          
           <Card className="p-6 space-y-6 glass">
             <div className="flex items-center justify-between">
               <div>
