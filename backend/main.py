@@ -684,58 +684,97 @@ async def chat(request: ChatRequest):
 
 @app.get("/api/youtube/transcript/{video_id}")
 async def get_youtube_transcript(video_id: str, lang: str = "en"):
-    """Fetch transcript/captions for a YouTube video"""
+    """Fetch transcript/captions for a YouTube video using yt-dlp"""
+    import subprocess
+    import tempfile
+    import re
+
     try:
-        from youtube_transcript_api import YouTubeTranscriptApi
-        from youtube_transcript_api._errors import (
-            TranscriptsDisabled,
-            NoTranscriptFound,
-            VideoUnavailable
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Use yt-dlp to download subtitles
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            output_path = f"{tmpdir}/subs"
 
-        try:
-            # Try to get transcript in requested language
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            # Try auto-generated subtitles first, then manual
+            cmd = [
+                "yt-dlp",
+                "--skip-download",
+                "--write-auto-sub",
+                "--write-sub",
+                "--sub-lang", lang,
+                "--sub-format", "vtt",
+                "--output", output_path,
+                url
+            ]
 
-            # Try manual transcript first, then auto-generated
-            transcript = None
-            try:
-                transcript = transcript_list.find_manually_created_transcript([lang, 'en'])
-            except:
-                try:
-                    transcript = transcript_list.find_generated_transcript([lang, 'en'])
-                except:
-                    # Get any available transcript
-                    for t in transcript_list:
-                        transcript = t
-                        break
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
-            if not transcript:
-                raise HTTPException(status_code=404, detail="No transcript available")
+            # Find the subtitle file
+            import glob
+            vtt_files = glob.glob(f"{tmpdir}/*.vtt")
 
-            # Fetch the actual transcript data
-            transcript_data = transcript.fetch()
+            if not vtt_files:
+                # Try with 'en' as fallback
+                if lang != "en":
+                    cmd[5] = "en"
+                    subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                    vtt_files = glob.glob(f"{tmpdir}/*.vtt")
 
-            # Combine into full text
-            full_text = ' '.join([entry['text'] for entry in transcript_data])
+            if not vtt_files:
+                raise HTTPException(status_code=404, detail="No subtitles available for this video")
+
+            # Parse VTT file
+            with open(vtt_files[0], 'r', encoding='utf-8') as f:
+                vtt_content = f.read()
+
+            # Extract text and timestamps from VTT
+            segments = []
+            full_text_parts = []
+
+            # VTT format: timestamp --> timestamp\ntext
+            pattern = r'(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})\n(.*?)(?=\n\n|\Z)'
+            matches = re.findall(pattern, vtt_content, re.DOTALL)
+
+            seen_text = set()  # Deduplicate repeated lines
+            for start, end, text in matches:
+                # Clean up text (remove tags, extra whitespace)
+                clean_text = re.sub(r'<[^>]+>', '', text).strip()
+                clean_text = re.sub(r'\n', ' ', clean_text)
+
+                if clean_text and clean_text not in seen_text:
+                    seen_text.add(clean_text)
+                    full_text_parts.append(clean_text)
+
+                    # Parse timestamp to seconds
+                    h, m, s = start.split(':')
+                    start_sec = int(h) * 3600 + int(m) * 60 + float(s)
+
+                    h, m, s = end.split(':')
+                    end_sec = int(h) * 3600 + int(m) * 60 + float(s)
+
+                    segments.append({
+                        "text": clean_text,
+                        "start": start_sec,
+                        "duration": end_sec - start_sec
+                    })
+
+            full_text = ' '.join(full_text_parts)
+
+            # Determine if auto-generated
+            is_generated = '.en.vtt' in vtt_files[0] or 'auto' in vtt_files[0].lower()
 
             return {
                 "videoId": video_id,
-                "language": transcript.language_code,
-                "isGenerated": transcript.is_generated,
+                "language": lang,
+                "isGenerated": is_generated,
                 "transcript": full_text,
-                "segments": transcript_data,  # Includes timestamps
+                "segments": segments,
             }
 
-        except TranscriptsDisabled:
-            raise HTTPException(status_code=403, detail="Transcripts are disabled for this video")
-        except NoTranscriptFound:
-            raise HTTPException(status_code=404, detail="No transcript found for this video")
-        except VideoUnavailable:
-            raise HTTPException(status_code=404, detail="Video is unavailable")
-
-    except ImportError:
-        raise HTTPException(status_code=503, detail="YouTube transcript API not installed")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Timeout fetching subtitles")
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail="yt-dlp not installed on server")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch transcript: {str(e)}")
 

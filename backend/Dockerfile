@@ -7,7 +7,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
+
+# Install yt-dlp for YouTube subtitle extraction
+RUN pip install --no-cache-dir yt-dlp
 
 # Install Python dependencies
 COPY requirements.txt .

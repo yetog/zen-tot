@@ -33,6 +33,3 @@ passlib[bcrypt]==1.7.4
 
 # Utilities
 aiofiles==23.2.1
-
-# YouTube transcripts
-youtube-transcript-api==0.6.2
