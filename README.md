@@ -35,11 +35,17 @@ npm run dev
 ```
 Frontend (React/Vite)     Backend (FastAPI)        Services
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│ • Dashboard     │      │ • TTS Proxy     │      │ • ElevenLabs    │
-│ • Note Detail   │─────▶│ • Transcription │─────▶│ • IONOS AI Hub  │
-│ • Voice Agent   │      │ • File Storage  │      │ • Object Storage│
-│ • Settings      │      │ • Chat API      │      │ • PostgreSQL    │
+│ • Dashboard     │      │ • Real-time Sync│      │ • IONOS S3      │
+│ • Note Detail   │─────▶│ • TTS Proxy     │─────▶│   zen-tot-data  │
+│ • Voice Agent   │      │ • Chat API      │      │ • IONOS AI Hub  │
+│ • Settings      │      │ • File Storage  │      │ • ElevenLabs    │
 └─────────────────┘      └─────────────────┘      └─────────────────┘
+        │                        │
+        │ localStorage           │ S3 Bucket Structure:
+        │ (offline backup)       │ users/default/
+        │                        │   ├── folders/{id}/notes/
+        │                        │   ├── tags.json
+        │                        │   └── exports/
 ```
 
 ## 📁 Project Structure
@@ -94,6 +100,7 @@ See `docs/ionos-deployment.md` for detailed instructions.
 | Document | Description |
 |----------|-------------|
 | [HANDOFF.md](./HANDOFF.md) | Complete project handoff documentation |
+| [docs/S3_SYNC.md](./docs/S3_SYNC.md) | S3 sync system & API reference |
 | [docs/ionos-deployment.md](./docs/ionos-deployment.md) | IONOS DCD deployment guide |
 | [backend/README.md](./backend/README.md) | Backend API documentation |
 
@@ -113,8 +120,9 @@ See `docs/ionos-deployment.md` for detailed instructions.
 | PDF Extraction | ✅ Working |
 | Voice Recording | ✅ Working |
 | AI Summaries | ✅ Working |
+| S3 Sync | ✅ Working (real-time) |
+| Object Storage | ✅ Configured (zen-tot-data bucket) |
 | Voice Agent | 🔧 Needs Agent ID |
-| Object Storage | 🔧 Needs Setup |
 | Authentication | 📋 Planned |
 
 ## 🤝 Contributing
