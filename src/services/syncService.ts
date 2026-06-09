@@ -5,9 +5,13 @@
  */
 
 import { Note, Folder, Tag } from '@/types/note';
+import { getForgeUserId } from './forgeUser';
 
 // Get backend URL from env or use default
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+
+// Get user ID for all sync operations
+const getUserIdParam = () => `user_id=${encodeURIComponent(getForgeUserId())}`;
 
 interface SyncResponse {
   success: boolean;
@@ -104,7 +108,7 @@ class SyncService {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sync/notes/${note.id}`, {
+      const response = await fetch(`${BACKEND_URL}/api/sync/notes/${note.id}?${getUserIdParam()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(note),
@@ -131,6 +135,7 @@ class SyncService {
 
     try {
       const url = new URL(`${BACKEND_URL}/api/sync/notes/${noteId}`);
+      url.searchParams.set('user_id', getForgeUserId());
       if (folderId) url.searchParams.set('folder_id', folderId);
 
       const response = await fetch(url.toString(), { method: 'DELETE' });
@@ -160,7 +165,7 @@ class SyncService {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sync/folders/${folder.id}`, {
+      const response = await fetch(`${BACKEND_URL}/api/sync/folders/${folder.id}?${getUserIdParam()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(folder),
@@ -185,7 +190,7 @@ class SyncService {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sync/folders/${folderId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/sync/folders/${folderId}?${getUserIdParam()}`, {
         method: 'DELETE',
       });
 
@@ -214,7 +219,7 @@ class SyncService {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sync/tags`, {
+      const response = await fetch(`${BACKEND_URL}/api/sync/tags?${getUserIdParam()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tags),
@@ -241,7 +246,7 @@ class SyncService {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sync/full`, {
+      const response = await fetch(`${BACKEND_URL}/api/sync/full?${getUserIdParam()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -266,7 +271,7 @@ class SyncService {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sync/full`);
+      const response = await fetch(`${BACKEND_URL}/api/sync/full?${getUserIdParam()}`);
 
       if (!response.ok) {
         throw new Error(`Fetch failed: ${response.status}`);

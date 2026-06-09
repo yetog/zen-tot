@@ -1,5 +1,10 @@
 import { Note, Folder, Tag, NoteFilter, NoteType } from '@/types/note';
 import { syncService } from './syncService';
+import {
+  recordNoteCreated,
+  recordNoteUpdated,
+  recordFolderCreated,
+} from './questfulService';
 
 const NOTES_KEY = 'zen_tot_notes';
 const FOLDERS_KEY = 'zen_tot_folders';
@@ -46,6 +51,9 @@ export const createNote = (
 
   // Sync to S3 (async, non-blocking)
   syncService.syncNote(note);
+
+  // Record XP event (async, non-blocking)
+  recordNoteCreated(note.id, note.title);
 
   return note;
 };
@@ -140,6 +148,9 @@ export const createFolder = (name: string): Folder => {
 
   // Sync to S3 (async, non-blocking)
   syncService.syncFolder(folder);
+
+  // Record XP event (async, non-blocking)
+  recordFolderCreated(folder.id, folder.name);
 
   return folder;
 };

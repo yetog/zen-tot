@@ -230,12 +230,12 @@ async def health_check():
 # ============ Note Sync ============
 
 @app.put("/api/sync/notes/{note_id}")
-async def sync_note(note_id: str, note: Note):
+async def sync_note(note_id: str, note: Note, user_id: str = Query(default="default")):
     """Sync a single note to S3 (create or update)"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     folder_path = f"folders/{note.folderId}" if note.folderId else "unfiled"
     note_key = f"{user_path}/{folder_path}/notes/{note_id}/note.json"
 
@@ -248,12 +248,12 @@ async def sync_note(note_id: str, note: Note):
 
 
 @app.delete("/api/sync/notes/{note_id}")
-async def delete_note(note_id: str, folder_id: Optional[str] = None):
+async def delete_note(note_id: str, folder_id: Optional[str] = None, user_id: str = Query(default="default")):
     """Delete a note from S3"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     folder_path = f"folders/{folder_id}" if folder_id else "unfiled"
     note_prefix = f"{user_path}/{folder_path}/notes/{note_id}/"
 
@@ -266,12 +266,12 @@ async def delete_note(note_id: str, folder_id: Optional[str] = None):
 
 
 @app.get("/api/sync/notes/{note_id}")
-async def get_note(note_id: str, folder_id: Optional[str] = None):
+async def get_note(note_id: str, folder_id: Optional[str] = None, user_id: str = Query(default="default")):
     """Get a single note from S3"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
 
     # If folder_id provided, look directly
     if folder_id:
@@ -292,12 +292,12 @@ async def get_note(note_id: str, folder_id: Optional[str] = None):
 # ============ Folder Sync ============
 
 @app.put("/api/sync/folders/{folder_id}")
-async def sync_folder(folder_id: str, folder: Folder):
+async def sync_folder(folder_id: str, folder: Folder, user_id: str = Query(default="default")):
     """Sync a folder to S3"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     folder_key = f"{user_path}/folders/{folder_id}/metadata.json"
 
     folder_data = folder.dict()
@@ -309,12 +309,12 @@ async def sync_folder(folder_id: str, folder: Folder):
 
 
 @app.delete("/api/sync/folders/{folder_id}")
-async def delete_folder(folder_id: str):
+async def delete_folder(folder_id: str, user_id: str = Query(default="default")):
     """Delete a folder and all its notes from S3"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     folder_prefix = f"{user_path}/folders/{folder_id}/"
 
     keys = list_s3_keys(folder_prefix)
@@ -325,12 +325,12 @@ async def delete_folder(folder_id: str):
 
 
 @app.get("/api/sync/folders")
-async def list_folders():
+async def list_folders(user_id: str = Query(default="default")):
     """List all folders"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     prefix = f"{user_path}/folders/"
 
     folders = []
@@ -348,12 +348,12 @@ async def list_folders():
 # ============ Tag Sync ============
 
 @app.put("/api/sync/tags")
-async def sync_tags(tags: List[Tag]):
+async def sync_tags(tags: List[Tag], user_id: str = Query(default="default")):
     """Sync all tags to S3"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     tags_key = f"{user_path}/tags.json"
 
     tags_data = {
@@ -367,12 +367,12 @@ async def sync_tags(tags: List[Tag]):
 
 
 @app.get("/api/sync/tags")
-async def get_tags():
+async def get_tags(user_id: str = Query(default="default")):
     """Get all tags"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     tags_key = f"{user_path}/tags.json"
 
     data = load_json_from_s3(tags_key)
@@ -382,12 +382,12 @@ async def get_tags():
 # ============ Full Sync ============
 
 @app.post("/api/sync/full")
-async def full_sync(data: SyncRequest):
+async def full_sync(data: SyncRequest, user_id: str = Query(default="default")):
     """Full sync: upload all notes, folders, and tags"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
     results = {"notes": 0, "folders": 0, "tags": 0, "errors": []}
 
     # Sync folders first
@@ -427,12 +427,12 @@ async def full_sync(data: SyncRequest):
 
 
 @app.get("/api/sync/full")
-async def get_all_data():
+async def get_all_data(user_id: str = Query(default="default")):
     """Get all synced data from S3"""
     if not s3_client:
         raise HTTPException(status_code=503, detail="S3 not configured")
 
-    user_path = get_user_path()
+    user_path = get_user_path(user_id)
 
     # Get folders
     folders = []

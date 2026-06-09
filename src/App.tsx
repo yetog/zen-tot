@@ -27,7 +27,7 @@ const App = () => (
         <NotesProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter basename="/zen-tot">
             <SidebarProvider>
               <div className="min-h-screen flex w-full">
                 <AppSidebar />
