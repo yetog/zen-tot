@@ -107,25 +107,38 @@ export const useAudioCapture = (options: AudioCaptureOptions = {}) => {
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        
+
         recognition.continuous = true;
-        recognition.interimResults = true;
+        recognition.interimResults = false; // Only final results to prevent stuttering
         recognition.lang = 'en-US';
 
-        recognition.onresult = (event) => {
-          let finalTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
+        // Track full transcript to prevent duplicates
+        let fullTranscript = '';
+
+        recognition.onresult = (event: any) => {
+          // Rebuild from all final results
+          fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
             if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
+              fullTranscript += event.results[i][0].transcript + ' ';
             }
           }
-          if (finalTranscript) {
-            options.onTranscript?.(finalTranscript);
-          }
+          options.onTranscript?.(fullTranscript.trim());
         };
 
-        recognition.onerror = (event) => {
+        recognition.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error);
+        };
+
+        // Auto-restart on end
+        recognition.onend = () => {
+          if (mediaRecorderRef.current?.state === 'recording') {
+            try {
+              recognition.start();
+            } catch (e) {
+              // Already started
+            }
+          }
         };
 
         recognitionRef.current = recognition;

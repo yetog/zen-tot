@@ -680,6 +680,66 @@ async def chat(request: ChatRequest):
         }
 
 
+# ============ YouTube Transcripts ============
+
+@app.get("/api/youtube/transcript/{video_id}")
+async def get_youtube_transcript(video_id: str, lang: str = "en"):
+    """Fetch transcript/captions for a YouTube video"""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        from youtube_transcript_api._errors import (
+            TranscriptsDisabled,
+            NoTranscriptFound,
+            VideoUnavailable
+        )
+
+        try:
+            # Try to get transcript in requested language
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+
+            # Try manual transcript first, then auto-generated
+            transcript = None
+            try:
+                transcript = transcript_list.find_manually_created_transcript([lang, 'en'])
+            except:
+                try:
+                    transcript = transcript_list.find_generated_transcript([lang, 'en'])
+                except:
+                    # Get any available transcript
+                    for t in transcript_list:
+                        transcript = t
+                        break
+
+            if not transcript:
+                raise HTTPException(status_code=404, detail="No transcript available")
+
+            # Fetch the actual transcript data
+            transcript_data = transcript.fetch()
+
+            # Combine into full text
+            full_text = ' '.join([entry['text'] for entry in transcript_data])
+
+            return {
+                "videoId": video_id,
+                "language": transcript.language_code,
+                "isGenerated": transcript.is_generated,
+                "transcript": full_text,
+                "segments": transcript_data,  # Includes timestamps
+            }
+
+        except TranscriptsDisabled:
+            raise HTTPException(status_code=403, detail="Transcripts are disabled for this video")
+        except NoTranscriptFound:
+            raise HTTPException(status_code=404, detail="No transcript found for this video")
+        except VideoUnavailable:
+            raise HTTPException(status_code=404, detail="Video is unavailable")
+
+    except ImportError:
+        raise HTTPException(status_code=503, detail="YouTube transcript API not installed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch transcript: {str(e)}")
+
+
 # ============ Run ============
 
 if __name__ == "__main__":

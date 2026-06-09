@@ -324,9 +324,42 @@ ${note.chatInsights?.length ? `## Insights from Chat\n\n${note.chatInsights.map(
           <Button variant="ghost" size="icon" className="transition-transform hover:scale-110">
             <Share className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleExportMarkdown} className="transition-transform hover:scale-110">
-            <Download className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="transition-transform hover:scale-110">
+                <Download className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportMarkdown}>
+                <FileText className="h-4 w-4 mr-2" />
+                Export as Markdown
+              </DropdownMenuItem>
+              {(note.sourceUrl || note.storageKey) && (
+                <DropdownMenuItem onClick={() => {
+                  const url = note.sourceUrl || note.storageKey;
+                  if (url) {
+                    // If it's a blob URL or data URL, create download link
+                    if (url.startsWith('blob:') || url.startsWith('data:')) {
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${note.type === 'audio' ? 'webm' : note.type === 'pdf' ? 'pdf' : 'file'}`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    } else {
+                      // Open S3/external URL in new tab for download
+                      window.open(url, '_blank');
+                    }
+                    toast.success('Downloading original file');
+                  }
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Original {note.type === 'audio' ? 'Audio' : note.type === 'pdf' ? 'PDF' : 'File'}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="icon" onClick={handleDelete} className="transition-transform hover:scale-110">
             <Trash2 className="h-5 w-5 text-destructive" />
           </Button>

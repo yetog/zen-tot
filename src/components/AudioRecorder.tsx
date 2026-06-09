@@ -25,38 +25,54 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null);
 
+  // Track processed result indices to prevent duplicates
+  const processedIndexRef = useRef<number>(0);
+
   // Initialize speech recognition
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
+      recognitionRef.current.interimResults = false; // Only final results to prevent stuttering
       recognitionRef.current.lang = 'en-US';
 
       recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalTranscript += result[0].transcript + ' ';
-          } else {
-            interimTranscript += result[0].transcript;
+        // Build transcript from all final results to prevent duplicates
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            fullTranscript += event.results[i][0].transcript + ' ';
           }
         }
-
-        setTranscript((prev) => {
-          if (finalTranscript) {
-            return prev + finalTranscript;
-          }
-          return prev;
-        });
+        setTranscript(fullTranscript.trim());
       };
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
+        // Auto-restart on recoverable errors
+        if (event.error === 'no-speech' || event.error === 'audio-capture') {
+          setTimeout(() => {
+            if (isRecording && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (e) {
+                // Already started, ignore
+              }
+            }
+          }, 100);
+        }
+      };
+
+      // Auto-restart when recognition ends unexpectedly
+      recognitionRef.current.onend = () => {
+        if (isRecording && !isPaused) {
+          try {
+            recognitionRef.current?.start();
+          } catch (e) {
+            // Already started, ignore
+          }
+        }
       };
     }
 
@@ -65,7 +81,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [isRecording, isPaused]);
 
   // Timer effect
   useEffect(() => {

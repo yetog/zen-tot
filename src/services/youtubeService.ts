@@ -92,3 +92,57 @@ export function getThumbnailUrl(videoId: string, quality: 'default' | 'hq' | 'ma
   };
   return `https://img.youtube.com/vi/${videoId}/${qualityMap[quality]}.jpg`;
 }
+
+/**
+ * Transcript segment with timestamp
+ */
+export interface TranscriptSegment {
+  text: string;
+  start: number;
+  duration: number;
+}
+
+/**
+ * YouTube transcript response
+ */
+export interface YouTubeTranscript {
+  videoId: string;
+  language: string;
+  isGenerated: boolean;
+  transcript: string;
+  segments: TranscriptSegment[];
+}
+
+/**
+ * Fetch YouTube video transcript/captions
+ */
+export async function fetchYouTubeTranscript(
+  videoIdOrUrl: string,
+  lang: string = 'en'
+): Promise<YouTubeTranscript | null> {
+  // Extract video ID if full URL provided
+  const videoId = extractVideoId(videoIdOrUrl) || videoIdOrUrl;
+
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+  if (!BACKEND_URL) {
+    console.warn('Backend URL not configured, cannot fetch transcript');
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/api/youtube/transcript/${videoId}?lang=${lang}`
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('Failed to fetch transcript:', error.detail || response.statusText);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching YouTube transcript:', error);
+    return null;
+  }
+}
